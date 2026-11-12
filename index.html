@@ -129,16 +129,29 @@
       margin-bottom: 8px;
       font-weight: 700;
       color: var(--accent);
+      gap: 6px;
     }
     .win-close {
       background: #2c3542;
       color: #fff;
       border: none;
       border-radius: 4px;
-      padding: 2px 8px;
+      padding: 4px 10px;
       cursor: pointer;
       font-weight: 700;
+      font-size: 0.74rem;
     }
+    .win-reset {
+      background: #742a2a;
+      color: #fed7d7;
+      border: 1px solid #9b2c2c;
+      border-radius: 4px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.74rem;
+    }
+    .win-reset:hover { background: #9b2c2c; }
     .solver-grid {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
@@ -498,7 +511,10 @@
     <div class="modal-content">
       <div class="win-header">
         <span>ARMORY & EQUIPMENT UPGRADES</span>
-        <button class="win-close" onclick="closeArmory()">CLOSE</button>
+        <div style="display:flex; gap:6px;">
+          <button class="win-reset" onclick="resetProgress()">RESET PROGRESS</button>
+          <button class="win-close" onclick="closeArmory()">CLOSE</button>
+        </div>
       </div>
       <div id="armory-list"></div>
     </div>
@@ -574,7 +590,7 @@
       { id: 'hornady_257_134', name: '.257 Hornady 134gr ELD-M', cost: 1020, roundCost: 2.90, bc: 0.325, mv: 2880, dia: 0.257, wt: 134.0, len: 1.410, twist: 7.5 },
       { id: 'berger_257_135', name: '.257 Berger 135gr LR Hybrid', cost: 1180, roundCost: 3.10, bc: 0.334, mv: 2870, dia: 0.257, wt: 135.0, len: 1.416, twist: 7.5 },
 
-      // .264 (6.5mm — tuned to ~2700 fps & high 2600s for 150gr+)
+      // .264 (6.5mm)
       { id: 'hornady_264_140', name: '.264 Hornady 140gr ELD-M', cost: 1320, roundCost: 3.00, bc: 0.315, mv: 2715, dia: 0.264, wt: 140.0, len: 1.380, twist: 8.0 },
       { id: 'berger_264_140', name: '.264 Berger 140gr Hybrid', cost: 1450, roundCost: 3.25, bc: 0.311, mv: 2720, dia: 0.264, wt: 140.0, len: 1.405, twist: 8.0 },
       { id: 'berger_264_144', name: '.264 Berger 144gr LR Hybrid', cost: 1600, roundCost: 3.40, bc: 0.336, mv: 2705, dia: 0.264, wt: 144.0, len: 1.415, twist: 8.0 },
@@ -629,9 +645,11 @@
     ];
 
     // =========================================================================
-    // 3. PLAYER & SIMULATION STATE
+    // 3. PLAYER STATE & LOCALSTORAGE PERSISTENCE
     // =========================================================================
-    let state = {
+    const SAVE_KEY = 'precision_rifle_sim_save_v1';
+
+    const DEFAULT_SAVE = {
       cash: 250.00,
       unlocked: ['sierra_224_77', 'opt_1', 'wind_1', 'ammo_1', 'brl_1', 'chs_1'],
       eq: {
@@ -641,7 +659,13 @@
         ammo: 'ammo_1',
         barrel: 'brl_1',
         chassis: 'chs_1'
-      },
+      }
+    };
+
+    let state = {
+      cash: DEFAULT_SAVE.cash,
+      unlocked: [...DEFAULT_SAVE.unlocked],
+      eq: { ...DEFAULT_SAVE.eq },
       targetType: 'ipsc_full',
       distanceYd: 500,
       azimuthDeg: 90,
@@ -673,6 +697,62 @@
       dustPlumes: [],
       inFlight: false
     };
+
+    function saveProgress() {
+      try {
+        const payload = {
+          cash: parseFloat(state.cash.toFixed(2)),
+          unlocked: state.unlocked,
+          eq: state.eq
+        };
+        localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+      } catch (e) {
+        console.warn('Could not save progress:', e);
+      }
+    }
+
+    function loadProgress() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (typeof parsed.cash === 'number') state.cash = parsed.cash;
+        if (Array.isArray(parsed.unlocked)) state.unlocked = parsed.unlocked;
+        if (parsed.eq && typeof parsed.eq === 'object') {
+          state.eq = { ...DEFAULT_SAVE.eq, ...parsed.eq };
+        }
+        const activeOptic = OPTICS.find(x => x.id === state.eq.optic) || OPTICS[0];
+        state.zoom = Math.min(activeOptic.maxZoom, Math.max(activeOptic.minZoom, state.zoom));
+        document.getElementById('hud-zoom').innerText = `${state.zoom.toFixed(1)}x`;
+        document.getElementById('disp-zoom-btn').innerText = `${state.zoom}x`;
+      } catch (e) {
+        console.warn('Could not load saved progress:', e);
+      }
+    }
+
+    function resetProgress() {
+      const confirmed = confirm("Reset all progress? This will wipe your cash balance, unlocked projectiles, and upgraded equipment back to starter gear.");
+      if (!confirmed) return;
+
+      try {
+        localStorage.removeItem(SAVE_KEY);
+      } catch (e) {}
+
+      state.cash = DEFAULT_SAVE.cash;
+      state.unlocked = [...DEFAULT_SAVE.unlocked];
+      state.eq = { ...DEFAULT_SAVE.eq };
+      state.zoom = 10;
+      state.impacts = [];
+      state.dustPlumes = [];
+
+      document.getElementById('hud-zoom').innerText = '10.0x';
+      document.getElementById('disp-zoom-btn').innerText = '10x';
+
+      saveProgress();
+      updateTopUI();
+      renderArmory();
+      setFeedback("PROGRESS RESET TO STARTER KIT", "#e5a93b");
+    }
 
     const TERRAIN_BUSHES = Array.from({ length: 34 }, () => ({
       xNorm: (Math.random() - 0.5) * 2.5,
@@ -745,7 +825,7 @@
       let t = 0, x = 0, y = -sightH_m, z = 0;
       let vx = v0 * Math.cos(theta), vy = v0 * Math.sin(theta), vz = 0;
       let px, py, pz, pt;
-      let transonicTime = 0; // Accumulate time spent inside Mach 1.25 -> 0.85 shockwave zone
+      let transonicTime = 0;
 
       while (x < target_m) {
         px = x; py = y; pz = z; pt = t;
@@ -876,6 +956,7 @@
       }
 
       state.cash -= roundCost;
+      saveProgress();
       updateTopUI();
       state.inFlight = true;
       document.getElementById('btn-fire').disabled = true;
@@ -900,12 +981,9 @@
         azDeg: state.azimuthDeg
       });
 
-      // Mechanical dispersion cone (MOA -> MRAD)
       const effectiveMoa = Math.max(0.15, brl.groupMoa + chs.groupBonus);
       let dispStdMrad = (effectiveMoa * 0.290888) / 2.5;
 
-      // Transonic instability multiplier (shockwave buffeting between Mach 1.25 and 0.85)
-      // Lower Sg projectiles suffer worse transonic yaw
       let transonicPenaltyMrad = 0;
       if (trueSol.transonicTime > 0) {
         const stabilityFactor = Math.max(0.6, Math.min(2.0, trueSol.sg));
@@ -914,7 +992,7 @@
 
       const totalStdMrad = dispStdMrad + transonicPenaltyMrad;
       const dispX = gaussianRandom(0, totalStdMrad);
-      const dispY = gaussianRandom(0, totalStdMrad * 1.15); // Slightly higher vertical dispersion in transonic
+      const dispY = gaussianRandom(0, totalStdMrad * 1.15);
 
       const totalAimElevMrad = state.turretElev + state.bagElevMrad + state.aimPanY - state.swayY;
       const totalAimWindMrad = state.turretWind + state.aimPanX + state.swayX;
@@ -949,7 +1027,6 @@
         const machNote = trueSol.finalMach < 1.15 ? ` [Mach ${trueSol.finalMach.toFixed(2)} Transonic]` : '';
 
         if (isHit) {
-          // Steep target size multipliers, half base payout
           const multMap = {
             'ipsc_full': 1.0,
             'ipsc_23': 1.6,
@@ -959,6 +1036,7 @@
           const mult = multMap[state.targetType] || 1.0;
           const payout = parseFloat(((state.distanceYd * 0.04) * mult).toFixed(2));
           state.cash += payout;
+          saveProgress();
           updateTopUI();
           setFeedback(`IMPACT! +$${payout.toFixed(2)} (${hitXIn >= 0 ? '+' : ''}${hitXIn.toFixed(1)}" H, ${hitYIn >= 0 ? '+' : ''}${hitYIn.toFixed(1)}" V)${machNote}`, "#38a169");
         } else {
@@ -976,7 +1054,6 @@
         const radiusIn = (1.5 * 1.047 * (state.distanceYd / 100)) / 2;
         return Math.sqrt(xIn * xIn + yIn * yIn) <= radiusIn;
       } else {
-        // 1.0 MOA round plate
         const radiusIn = (1.0 * 1.047 * (state.distanceYd / 100)) / 2;
         return Math.sqrt(xIn * xIn + yIn * yIn) <= radiusIn;
       }
@@ -1026,7 +1103,7 @@
       const viewOffsetX = -(state.aimPanX + state.swayX + state.recoilX) * pxPerTrueMrad;
       const viewOffsetY = (state.aimPanY + state.bagElevMrad - state.swayY + state.recoilY) * pxPerTrueMrad;
 
-      // 1. REALISTIC SKY GRADIENT
+      // 1. SKY GRADIENT
       const skyGrad = ctx.createLinearGradient(0, 0, 0, cy + viewOffsetY);
       skyGrad.addColorStop(0, '#4573a3');
       skyGrad.addColorStop(0.65, '#89b2d6');
@@ -1074,7 +1151,7 @@
         ctx.fillRect(0, bandY, W, 12 + b * 6);
       }
 
-      // 4. TARGET AREA & IMPACT BERM (World Space)
+      // 4. TARGET AREA & IMPACT BERM
       ctx.save();
       ctx.translate(cx + viewOffsetX, cy + viewOffsetY);
 
@@ -1154,7 +1231,7 @@
         ctx.stroke();
       }
 
-      // 7. DOWNRANGE WIND FLAG (FIXED DIRECTION: 3 o'clock wind blows TOWARD 9 o'clock / Left)
+      // 7. DOWNRANGE WIND FLAG
       if (state.eq.wind === 'wind_2' || state.eq.wind === 'wind_3') {
         const flagX = ((46 / inchesPerMrad) * pxPerTrueMrad);
         const flagPoleH = (52 / inchesPerMrad) * pxPerTrueMrad;
@@ -1167,7 +1244,6 @@
         ctx.lineTo(flagX, baseGroundY - flagPoleH);
         ctx.stroke();
 
-        // Negative sign flips flag direction so wind FROM 3 o'clock (+sin) blows TO 9 o'clock (left / negative X)
         const crossFactor = -Math.sin((state.curWindClock * 30) * Math.PI / 180);
         const flutter = Math.sin(tSec * (6 + state.curWindMph * 0.8)) * 2.5;
         const flagLen = Math.min(state.curWindMph * 2.4, 34) * crossFactor;
@@ -1199,7 +1275,7 @@
         }
       });
 
-      // 9. DRIFTING DUST PLUMES ON MISSES (Also drifts WITH wind toward 9 o'clock on 3 o'clock wind)
+      // 9. DRIFTING DUST PLUMES ON MISSES
       const windDriftDir = -Math.sin((state.curWindClock * 30) * Math.PI / 180);
       for (let i = state.dustPlumes.length - 1; i >= 0; i--) {
         const p = state.dustPlumes[i];
@@ -1223,7 +1299,7 @@
 
       ctx.restore();
 
-      // 10. HEAT MIRAGE WAVES (Drifts with wind)
+      // 10. HEAT MIRAGE WAVES
       const mirageCross = -Math.sin((state.curWindClock * 30) * Math.PI / 180);
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
       ctx.lineWidth = 1.5;
@@ -1239,7 +1315,7 @@
         ctx.stroke();
       }
 
-      // 11. RETICLE RENDERING (SFP vs FFP Scaling)
+      // 11. RETICLE RENDERING
       const reticlePxPerMrad = o.ffp ? pxPerTrueMrad : (10 * 2.4);
 
       ctx.strokeStyle = '#090b0e';
@@ -1304,10 +1380,9 @@
         }
       }
 
-      // 12. OUTER SCOPE TUBE BEZEL & RIFLE HARDWARE (Scope Rings, Barrel & Chassis Forend)
+      // 12. OUTER SCOPE TUBE BEZEL & RIFLE HARDWARE
       const scopeRadius = Math.min(cx, cy) - 20;
 
-      // Vignette inside scope glass
       const vigGrad = ctx.createRadialGradient(cx, cy, scopeRadius - 42, cx, cy, scopeRadius);
       vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
       vigGrad.addColorStop(1, 'rgba(0,0,0,0.68)');
@@ -1316,7 +1391,6 @@
       ctx.arc(cx, cy, scopeRadius, 0, Math.PI * 2);
       ctx.fill();
 
-      // Mask everything outside the circular scope ocular lens
       ctx.save();
       ctx.fillStyle = '#090b0e';
       ctx.beginPath();
@@ -1325,14 +1399,13 @@
       ctx.fill();
       ctx.restore();
 
-      // Scope metallic ocular ring rim
       ctx.strokeStyle = '#232931';
       ctx.lineWidth = 6;
       ctx.beginPath();
       ctx.arc(cx, cy, scopeRadius + 2, 0, Math.PI * 2);
       ctx.stroke();
 
-      // --- VISIBLE RIFLE HARDWARE BELOW SCOPE TUBE (Reacts to Recoil) ---
+      // VISIBLE RIFLE HARDWARE BELOW SCOPE TUBE
       const rifleShiftX = -state.recoilX * 6;
       const rifleShiftY = -state.recoilY * 5;
       const baseBottomY = cy + scopeRadius;
@@ -1340,7 +1413,6 @@
       ctx.save();
       ctx.translate(cx + rifleShiftX, baseBottomY + rifleShiftY);
 
-      // 1. Heavy Barrel & Muzzle Brake extending forward (perspective taper)
       const bblGrad = ctx.createLinearGradient(-22, -45, 22, -45);
       bblGrad.addColorStop(0, '#1a202c');
       bblGrad.addColorStop(0.5, '#4a5568');
@@ -1354,12 +1426,10 @@
       ctx.closePath();
       ctx.fill();
 
-      // Muzzle Brake Ports
       ctx.fillStyle = '#0f1318';
       ctx.fillRect(-10, -45, 20, 4);
       ctx.fillRect(-10, -38, 20, 4);
 
-      // 2. Chassis Forend & Arca Rail
       const chsColor = state.eq.chassis === 'chs_3' ? '#3a4238' : (state.eq.chassis === 'chs_2' ? '#2d3748' : '#26292e');
       ctx.fillStyle = chsColor;
       ctx.strokeStyle = '#14181f';
@@ -1373,12 +1443,10 @@
       ctx.fill();
       ctx.stroke();
 
-      // M-LOK / Vent slots on chassis forend
       ctx.fillStyle = '#111418';
       ctx.fillRect(-20, -14, 6, 14);
       ctx.fillRect(14, -14, 6, 14);
 
-      // 3. Lower Scope Ring & Picatinny Base Saddle
       ctx.fillStyle = '#1e242c';
       ctx.strokeStyle = '#38414e';
       ctx.lineWidth = 1.5;
@@ -1387,7 +1455,6 @@
       ctx.fill();
       ctx.stroke();
 
-      // Scope Ring Clamping Bolts (Left & Right lugs)
       ctx.fillStyle = '#718096';
       ctx.beginPath();
       ctx.arc(-27, 3, 3.2, 0, Math.PI * 2);
@@ -1571,10 +1638,13 @@
       }
       state.impacts = [];
       state.dustPlumes = [];
+      saveProgress();
       updateTopUI();
       renderArmory();
     }
 
+    // Load saved progress on startup
+    loadProgress();
     updateTopUI();
     requestAnimationFrame(drawFrame);
   </script>
