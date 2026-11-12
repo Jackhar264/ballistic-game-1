@@ -531,24 +531,20 @@
     // 2. COMPLETE 19-BULLET LIBRARY & EQUIPMENT CATALOG
     // =========================================================================
     const BULLETS = [
-      // .224
       { id: 'sierra_224_77', name: '.224 Sierra 77gr SMK', cost: 0, roundCost: 1.50, bc: 0.190, mv: 2750, dia: 0.224, wt: 77.0, len: 0.990, twist: 8.0 },
       { id: 'hornady_224_75', name: '.224 Hornady 75gr ELD-M', cost: 120, roundCost: 1.60, bc: 0.212, mv: 2810, dia: 0.224, wt: 75.0, len: 1.110, twist: 8.0 },
       { id: 'berger_224_805', name: '.224 Berger 80.5gr Fullbore', cost: 220, roundCost: 1.85, bc: 0.226, mv: 2780, dia: 0.224, wt: 80.5, len: 1.095, twist: 7.5 },
       { id: 'hornady_224_88', name: '.224 Hornady 88gr ELD-M', cost: 320, roundCost: 1.95, bc: 0.274, mv: 2680, dia: 0.224, wt: 88.0, len: 1.240, twist: 7.0 },
 
-      // .243
       { id: 'hornady_243_105', name: '.243 Hornady 105gr BTHP', cost: 450, roundCost: 2.10, bc: 0.265, mv: 2980, dia: 0.243, wt: 105.0, len: 1.230, twist: 8.0 },
       { id: 'sierra_243_107', name: '.243 Sierra 107gr SMK', cost: 550, roundCost: 2.25, bc: 0.262, mv: 2960, dia: 0.243, wt: 107.0, len: 1.230, twist: 8.0 },
       { id: 'hornady_243_108', name: '.243 Hornady 108gr ELD-M', cost: 650, roundCost: 2.30, bc: 0.275, mv: 2950, dia: 0.243, wt: 108.0, len: 1.265, twist: 7.5 },
       { id: 'hornady_243_109', name: '.243 Hornady 109gr ELD-M', cost: 780, roundCost: 2.45, bc: 0.295, mv: 2930, dia: 0.243, wt: 109.0, len: 1.315, twist: 7.5 },
       { id: 'berger_243_120', name: '.243 Berger 120gr LR Hybrid', cost: 950, roundCost: 2.75, bc: 0.328, mv: 2860, dia: 0.243, wt: 120.0, len: 1.383, twist: 7.0 },
 
-      // .257
       { id: 'hornady_257_134', name: '.257 Hornady 134gr ELD-M', cost: 1150, roundCost: 2.90, bc: 0.325, mv: 2880, dia: 0.257, wt: 134.0, len: 1.410, twist: 7.5 },
       { id: 'berger_257_135', name: '.257 Berger 135gr LR Hybrid', cost: 1350, roundCost: 3.10, bc: 0.334, mv: 2870, dia: 0.257, wt: 135.0, len: 1.416, twist: 7.5 },
 
-      // .264
       { id: 'hornady_264_140', name: '.264 Hornady 140gr ELD-M', cost: 1500, roundCost: 3.00, bc: 0.315, mv: 2820, dia: 0.264, wt: 140.0, len: 1.380, twist: 8.0 },
       { id: 'berger_264_140', name: '.264 Berger 140gr Hybrid', cost: 1650, roundCost: 3.25, bc: 0.311, mv: 2820, dia: 0.264, wt: 140.0, len: 1.405, twist: 8.0 },
       { id: 'berger_264_144', name: '.264 Berger 144gr LR Hybrid', cost: 1850, roundCost: 3.40, bc: 0.336, mv: 2800, dia: 0.264, wt: 144.0, len: 1.415, twist: 8.0 },
@@ -603,30 +599,26 @@
         barrel: 'brl_1',
         chassis: 'chs_1'
       },
-      // Range settings
-      targetType: 'ipsc_full', // ipsc_full, ipsc_23, gong_15moa
+      targetType: 'ipsc_full',
       distanceYd: 500,
-      azimuthDeg: 90, // 90 deg East (shows Coriolis horizontal + Eötvös)
+      azimuthDeg: 90,
       latitudeDeg: 35.8,
       tempF: 64,
       pressInHg: 29.92,
 
-      // Dynamic Wind Wave
       baseWindMph: 8.5,
       baseWindClock: 3.0,
       curWindMph: 8.5,
       curWindClock: 3.0,
       windPhase: 0,
 
-      // Shooter Controls
       turretElev: 0.0,
       turretWind: 0.0,
       zoom: 10,
       bagElevMrad: 0.0,
-      aimPanX: 0.0, // Horizontal bipod pan (MRAD)
-      aimPanY: 0.0, // Coarse vertical pan (MRAD)
+      aimPanX: 0.0,
+      aimPanY: 0.0,
 
-      // Sway, Breath & Recoil
       oxygen: 100,
       holdingBreath: false,
       recoilY: 0,
@@ -634,10 +626,18 @@
       swayX: 0,
       swayY: 0,
 
-      // Visual impacts & splashes
       impacts: [], // { xMrad, yMrad, isHit }
+      dustPlumes: [], // { xMrad, yMrad, alpha, radius }
       inFlight: false
     };
+
+    // Procedural terrain & foliage seed
+    const TERRAIN_BUSHES = Array.from({ length: 28 }, () => ({
+      xNorm: (Math.random() - 0.5) * 2.2,
+      yNorm: Math.random(),
+      size: 0.5 + Math.random() * 1.1,
+      shade: Math.random()
+    }));
 
     // =========================================================================
     // 4. 3D RK4 + SPIN DRIFT + CORIOLIS BALLISTIC SOLVER
@@ -654,14 +654,12 @@
       const zero_m = 100 * 0.9144;
       const target_m = targetYd * 0.9144;
 
-      // Atmosphere
       const tempK = (tempF - 32) * (5 / 9) + 273.15;
       const speedSound = Math.sqrt(1.4 * 287.05 * tempK);
       const density = (pressInHg * 3386.39) / (287.05 * tempK);
       const refArea = (Math.PI / 4) * (0.0254 ** 2);
       const dragConst = (density * refArea) / (2.0 * 0.45359237 * bcG7);
 
-      // Apparent Wind Vector
       const windRad = (windClock * 30.0) * (Math.PI / 180);
       const wMps = windMph * 0.44704;
       const wx = -wMps * Math.cos(windRad);
@@ -674,7 +672,6 @@
         return [-ad * (vrx / vr), -g - ad * (vy / vr), -ad * (vrz / vr)];
       }
 
-      // 100yd Zero Angle via RK4
       function zeroRK4(angle) {
         let x = 0, y = -sightH_m, vx = v0 * Math.cos(angle), vy = v0 * Math.sin(angle);
         const dt = 0.0008;
@@ -702,7 +699,6 @@
         theta -= err / zero_m;
       }
 
-      // 3D RK4 Trajectory Integration
       const dt = 0.0008;
       let t = 0, x = 0, y = -sightH_m, z = 0;
       let vx = v0 * Math.cos(theta), vy = v0 * Math.sin(theta), vz = 0;
@@ -727,7 +723,6 @@
       const zFinal = pz + frac * (z - pz);
       const tFinal = pt + frac * (t - pt);
 
-      // Gyroscopic Spin Drift (Miller + Litz)
       const tRatio = twistIn / diaIn;
       const lRatio = lenIn / diaIn;
       const ft = ((tempF + 460) / 519.0) * (29.92 / pressInHg);
@@ -735,13 +730,10 @@
       sg = (sg * Math.cbrt(mvFps / 2800.0)) / ft;
       const spinDrift_m = (1.25 * (sg + 1.2) * (tFinal ** 1.83)) * 0.0254;
 
-      // Coriolis & Eötvös Effect
-      const omega = 7.2921159e-5; // Earth angular velocity (rad/s)
+      const omega = 7.2921159e-5;
       const latRad = latDeg * (Math.PI / 180);
       const azRad = azDeg * (Math.PI / 180);
-      // Horizontal Coriolis deflection (rightward in Northern Hemisphere)
       const coriolisHoriz_m = omega * target_m * tFinal * Math.sin(latRad);
-      // Vertical Eötvös deflection (shooting East lifts bullet slightly)
       const coriolisVert_m = 2 * omega * v0 * tFinal * Math.cos(latRad) * Math.sin(azRad) * (tFinal * 0.5);
 
       const totalY_m = yFinal + coriolisVert_m;
@@ -836,11 +828,9 @@
       document.getElementById('btn-fire').disabled = true;
       setFeedback("SHOT FIRED — TRACKING...", "#e5a93b");
 
-      // 1. Apply stochastic shot-to-shot MV and BC variance
       const actualMV = gaussianRandom(b.mv + a.mvBonus, a.mvSD);
       const actualBC = gaussianRandom(b.bc, b.bc * a.bcSDPct);
 
-      // 2. Solve true trajectory at instant of trigger break
       const trueSol = solveBallistics({
         targetYd: state.distanceYd,
         mvFps: actualMV,
@@ -857,38 +847,41 @@
         azDeg: state.azimuthDeg
       });
 
-      // 3. Apply mechanical barrel/chassis dispersion cone (MOA -> MRAD)
       const effectiveMoa = Math.max(0.15, brl.groupMoa + chs.groupBonus);
       const dispStdMrad = (effectiveMoa * 0.290888) / 2.5;
       const dispX = gaussianRandom(0, dispStdMrad);
       const dispY = gaussianRandom(0, dispStdMrad);
 
-      // 4. Calculate where crosshair is currently pointing relative to target center (MRAD)
-      // Total dialed/held elevation = turretElev + bagElevMrad + aimPanY + swayY
       const totalAimElevMrad = state.turretElev + state.bagElevMrad + state.aimPanY - state.swayY;
       const totalAimWindMrad = state.turretWind + state.aimPanX + state.swayX;
 
-      // Impact offset relative to target bullseye (MRAD)
       const impactX_Mrad = (totalAimWindMrad - trueSol.windMrad) + dispX;
       const impactY_Mrad = (totalAimElevMrad - trueSol.elevMrad) + dispY;
 
-      // 5. Trigger Recoil Impulse immediately
       state.recoilY = 2.4 * chs.recoilMult * (b.wt / 100);
       state.recoilX = gaussianRandom(0, 0.45 * chs.recoilMult);
 
-      // 6. Resolve impact after Time of Flight
       setTimeout(() => {
         state.inFlight = false;
         document.getElementById('btn-fire').disabled = false;
 
-        // Convert impact MRAD offset to inches at target distance
         const inchesPerMrad = (state.distanceYd * 36) / 1000;
         const hitXIn = impactX_Mrad * inchesPerMrad;
         const hitYIn = impactY_Mrad * inchesPerMrad;
 
         const isHit = checkTargetHit(hitXIn, hitYIn);
         state.impacts.push({ xMrad: impactX_Mrad, yMrad: impactY_Mrad, isHit });
-        if (state.impacts.length > 12) state.impacts.shift();
+        if (state.impacts.length > 16) state.impacts.shift();
+
+        // Spawn dynamic berm dust cloud on miss
+        if (!isHit) {
+          state.dustPlumes.push({
+            xMrad: impactX_Mrad,
+            yMrad: impactY_Mrad,
+            alpha: 0.85,
+            radius: 0.25
+          });
+        }
 
         if (isHit) {
           const mult = state.targetType === 'gong_15moa' ? 2.5 : (state.targetType === 'ipsc_23' ? 1.5 : 1.0);
@@ -904,39 +897,33 @@
 
     function checkTargetHit(xIn, yIn) {
       if (state.targetType === 'ipsc_full') {
-        // 18" wide x 30" tall silhouette
         return Math.abs(xIn) <= 9.0 && Math.abs(yIn) <= 15.0;
       } else if (state.targetType === 'ipsc_23') {
-        // 12" wide x 20" tall silhouette
         return Math.abs(xIn) <= 6.0 && Math.abs(yIn) <= 10.0;
       } else {
-        // 1.5 MOA round plate (1 MOA = 1.047" per 100 yd)
         const radiusIn = (1.5 * 1.047 * (state.distanceYd / 100)) / 2;
         return Math.sqrt(xIn * xIn + yIn * yIn) <= radiusIn;
       }
     }
 
     // =========================================================================
-    // 7. CANVAS SCOPE & RETICLE RENDERER (SFP vs FFP)
+    // 7. REALISTIC TERRAIN, MIRAGE & RETICLE RENDERER
     // =========================================================================
     const canvas = document.getElementById('scopeCanvas');
     const ctx = canvas.getContext('2d');
 
     function drawFrame(timestamp) {
-      // Update continuous gentle wind wave
       state.windPhase += 0.008;
       state.curWindMph = Math.max(0.5, state.baseWindMph + Math.sin(state.windPhase) * 1.8 + Math.cos(state.windPhase * 0.43) * 0.9);
       state.curWindClock = state.baseWindClock + Math.sin(state.windPhase * 0.6) * 0.45;
       if (state.curWindClock <= 0) state.curWindClock += 12;
       if (state.curWindClock > 12) state.curWindClock -= 12;
 
-      // Update Kestrel live readout if unlocked
       if (state.eq.wind === 'wind_3') {
         document.getElementById('kes-spd').innerText = `${state.curWindMph.toFixed(1)} MPH`;
         document.getElementById('kes-dir').innerText = `${state.curWindClock.toFixed(1)} Clock`;
       }
 
-      // Update Breathing Sway & Oxygen
       const { o, chs } = getEquipped();
       if (state.holdingBreath && state.oxygen > 0) {
         state.oxygen = Math.max(0, state.oxygen - 0.38);
@@ -953,35 +940,135 @@
       state.swayX = Math.sin(tSec * 1.7) * swayAmp;
       state.swayY = Math.sin(tSec * 3.4) * (swayAmp * 0.65);
 
-      // Decay Recoil Recovery
       state.recoilY *= 0.88;
       state.recoilX *= 0.88;
 
-      // --- RENDER WORLD ---
       const W = canvas.width, H = canvas.height;
       const cx = W / 2, cy = H / 2;
-
-      // Pixels per true angular MRAD scales with magnification
       const pxPerTrueMrad = state.zoom * 2.6;
 
-      // World shift relative to crosshair center
       const viewOffsetX = -(state.aimPanX + state.swayX + state.recoilX) * pxPerTrueMrad;
       const viewOffsetY = (state.aimPanY + state.bagElevMrad - state.swayY + state.recoilY) * pxPerTrueMrad;
 
-      // Sky & Berm Background
-      ctx.fillStyle = '#3c4c5e';
+      // 1. REALISTIC SKY GRADIENT
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, cy + viewOffsetY);
+      skyGrad.addColorStop(0, '#4a78a8');
+      skyGrad.addColorStop(0.65, '#8bb3d6');
+      skyGrad.addColorStop(1, '#d4e2ec');
+      ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = '#4a4339'; // Dirt berm
-      ctx.fillRect(0, cy + viewOffsetY - 40, W, H);
 
+      // 2. DISTANT MOUNTAIN RIDGES (Atmospheric Perspective)
+      const horizonY = cy + viewOffsetY - (38 * (state.zoom / 10));
+      ctx.save();
+      // Far mountain layer
+      ctx.fillStyle = '#6c859c';
+      ctx.beginPath();
+      ctx.moveTo(-100, horizonY + 30);
+      for (let mx = -100; mx <= W + 100; mx += 40) {
+        const ridgeH = Math.sin((mx - viewOffsetX * 0.25) * 0.008) * 28 + Math.cos((mx - viewOffsetX * 0.25) * 0.019) * 14;
+        ctx.lineTo(mx, horizonY - 35 - ridgeH);
+      }
+      ctx.lineTo(W + 100, horizonY + 30);
+      ctx.closePath();
+      ctx.fill();
+
+      // Closer foothills / treeline silhouette
+      ctx.fillStyle = '#4e6357';
+      ctx.beginPath();
+      ctx.moveTo(-100, horizonY + 40);
+      for (let mx = -100; mx <= W + 100; mx += 25) {
+        const hillH = Math.sin((mx - viewOffsetX * 0.45) * 0.013 + 1.4) * 18 + Math.sin((mx - viewOffsetX * 0.45) * 0.05) * 4;
+        ctx.lineTo(mx, horizonY - 12 - hillH);
+      }
+      ctx.lineTo(W + 100, horizonY + 40);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // 3. GRASS RANGE VALLEY FLOOR
+      const fieldGrad = ctx.createLinearGradient(0, horizonY, 0, H);
+      fieldGrad.addColorStop(0, '#6a7a52');
+      fieldGrad.addColorStop(0.3, '#55663e');
+      fieldGrad.addColorStop(1, '#394728');
+      ctx.fillStyle = fieldGrad;
+      ctx.fillRect(0, horizonY, W, H - horizonY);
+
+      // Subtle grass mowing lanes / distance bands
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+      for (let b = 0; b < 6; b++) {
+        const bandY = horizonY + Math.pow(b / 6, 1.6) * (H - horizonY);
+        ctx.fillRect(0, bandY, W, 12 + b * 6);
+      }
+
+      // 4. TARGET AREA & IMPACT BERM (World Space)
       ctx.save();
       ctx.translate(cx + viewOffsetX, cy + viewOffsetY);
 
-      // Draw Target Plate at true angular size
       const inchesPerMrad = (state.distanceYd * 36) / 1000;
-      ctx.fillStyle = '#e2e8f0';
+      const bermW = (240 / inchesPerMrad) * pxPerTrueMrad;
+      const bermH = (75 / inchesPerMrad) * pxPerTrueMrad;
+
+      // Dirt Backstop Berm behind target
+      const bermGrad = ctx.createLinearGradient(0, -bermH * 0.85, 0, bermH * 0.55);
+      bermGrad.addColorStop(0, '#8c7254');
+      bermGrad.addColorStop(0.5, '#735b40');
+      bermGrad.addColorStop(1, '#4f3e2b');
+      ctx.fillStyle = bermGrad;
+      ctx.beginPath();
+      ctx.moveTo(-bermW, bermH * 0.55);
+      ctx.quadraticCurveTo(-bermW * 0.65, -bermH * 0.9, 0, -bermH * 0.85);
+      ctx.quadraticCurveTo(bermW * 0.65, -bermH * 0.9, bermW, bermH * 0.55);
+      ctx.closePath();
+      ctx.fill();
+
+      // Berm base shadow
+      ctx.fillStyle = 'rgba(20, 25, 15, 0.35)';
+      ctx.fillRect(-bermW * 1.05, bermH * 0.52, bermW * 2.1, bermH * 0.12);
+
+      // Procedural scrub bushes around range floor
+      TERRAIN_BUSHES.forEach(bush => {
+        const bx = bush.xNorm * bermW * 1.6;
+        const by = bermH * 0.55 + bush.yNorm * (H * 0.45);
+        const br = (6 + bush.yNorm * 14) * bush.size * (state.zoom / 10);
+        ctx.fillStyle = bush.shade > 0.5 ? '#3b4a2b' : '#485935';
+        ctx.beginPath();
+        ctx.arc(bx, by, br, Math.PI, 0);
+        ctx.fill();
+      });
+
+      // 5. TARGET T-POST FRAME & CHAINS
+      const postH = (56 / inchesPerMrad) * pxPerTrueMrad;
+      const postTopY = -(24 / inchesPerMrad) * pxPerTrueMrad;
+      const postBotY = postTopY + postH;
+      const crossbarW = (26 / inchesPerMrad) * pxPerTrueMrad;
+
+      // Steel T-post & crossbar
+      ctx.strokeStyle = '#2d3748';
+      ctx.lineWidth = Math.max(2, (2.5 / inchesPerMrad) * pxPerTrueMrad);
+      ctx.beginPath();
+      // Vertical post behind target
+      ctx.moveTo(0, postTopY);
+      ctx.lineTo(0, postBotY);
+      // Top T-hanger bar
+      ctx.moveTo(-crossbarW * 0.5, postTopY);
+      ctx.lineTo(crossbarW * 0.5, postTopY);
+      ctx.stroke();
+
+      // Hanging chains
       ctx.strokeStyle = '#1a202c';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(-crossbarW * 0.32, postTopY);
+      ctx.lineTo(-crossbarW * 0.25, -4);
+      ctx.moveTo(crossbarW * 0.32, postTopY);
+      ctx.lineTo(crossbarW * 0.25, -4);
+      ctx.stroke();
+
+      // 6. STEEL TARGET PLATE (With metallic shading)
+      ctx.fillStyle = '#f1f5f9';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1.8;
 
       if (state.targetType === 'ipsc_full' || state.targetType === 'ipsc_23') {
         const scale = state.targetType === 'ipsc_23' ? (2 / 3) : 1.0;
@@ -1002,57 +1089,105 @@
         ctx.stroke();
       }
 
-      // Draw Downrange Wind Flag (Tier 2+ Wind Intel)
+      // 7. DOWNRANGE WIND FLAG (Tier 2+ Wind Intel)
       if (state.eq.wind === 'wind_2' || state.eq.wind === 'wind_3') {
-        const flagX = ((38 / inchesPerMrad) * pxPerTrueMrad);
-        const poleH = (45 / inchesPerMrad) * pxPerTrueMrad;
+        const flagX = ((46 / inchesPerMrad) * pxPerTrueMrad);
+        const flagPoleH = (52 / inchesPerMrad) * pxPerTrueMrad;
+        const baseGroundY = bermH * 0.52;
+
         ctx.strokeStyle = '#cbd5e0';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(flagX, 20);
-        ctx.lineTo(flagX, 20 - poleH);
+        ctx.moveTo(flagX, baseGroundY);
+        ctx.lineTo(flagX, baseGroundY - flagPoleH);
         ctx.stroke();
 
-        // Flag deflection proportional to crosswind component
         const crossFactor = Math.sin((state.curWindClock * 30) * Math.PI / 180);
-        const flagLen = Math.min(state.curWindMph * 2.2, 28) * crossFactor;
-        ctx.fillStyle = '#f56565';
+        const flutter = Math.sin(tSec * (6 + state.curWindMph * 0.8)) * 2.5;
+        const flagLen = Math.min(state.curWindMph * 2.4, 32) * crossFactor;
+        const droop = Math.max(2, 16 - state.curWindMph * 1.1);
+
+        ctx.fillStyle = '#e53e3e';
         ctx.beginPath();
-        ctx.moveTo(flagX, 20 - poleH);
-        ctx.lineTo(flagX + flagLen, 20 - poleH + (14 - Math.min(state.curWindMph, 12)));
-        ctx.lineTo(flagX, 20 - poleH + 10);
+        ctx.moveTo(flagX, baseGroundY - flagPoleH);
+        ctx.lineTo(flagX + flagLen, baseGroundY - flagPoleH + droop + flutter);
+        ctx.lineTo(flagX, baseGroundY - flagPoleH + 10);
         ctx.closePath();
         ctx.fill();
       }
 
-      // Draw Bullet Impacts & Dirt Splashes
+      // 8. BULLET IMPACTS (Lead splatter on steel / dirt craters on berm)
       state.impacts.forEach(imp => {
         const ix = imp.xMrad * pxPerTrueMrad;
         const iy = -imp.yMrad * pxPerTrueMrad;
-        ctx.fillStyle = imp.isHit ? '#2f855a' : '#d69e2e';
-        ctx.beginPath();
-        ctx.arc(ix, iy, imp.isHit ? 3.5 : 5, 0, Math.PI * 2);
-        ctx.fill();
+        if (imp.isHit) {
+          // Dark gray lead splash mark on white steel
+          ctx.fillStyle = 'rgba(45, 55, 72, 0.85)';
+          ctx.beginPath();
+          ctx.arc(ix, iy, Math.max(2.2, (0.8 / inchesPerMrad) * pxPerTrueMrad), 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          // Dark dirt crater in berm
+          ctx.fillStyle = 'rgba(42, 31, 20, 0.85)';
+          ctx.beginPath();
+          ctx.arc(ix, iy, Math.max(3, (1.4 / inchesPerMrad) * pxPerTrueMrad), 0, Math.PI * 2);
+          ctx.fill();
+        }
       });
+
+      // 9. DRIFTING DUST PLUMES ON MISSES
+      const windDriftDir = Math.sin((state.curWindClock * 30) * Math.PI / 180);
+      for (let i = state.dustPlumes.length - 1; i >= 0; i--) {
+        const p = state.dustPlumes[i];
+        p.xMrad += windDriftDir * (state.curWindMph * 0.00045);
+        p.yMrad += 0.0015; // Dust rises slightly
+        p.radius += 0.006;
+        p.alpha -= 0.005;
+
+        if (p.alpha <= 0) {
+          state.dustPlumes.splice(i, 1);
+          continue;
+        }
+        const px = p.xMrad * pxPerTrueMrad;
+        const py = -p.yMrad * pxPerTrueMrad;
+        const pr = p.radius * pxPerTrueMrad;
+        ctx.fillStyle = `rgba(196, 174, 142, ${p.alpha * 0.55})`;
+        ctx.beginPath();
+        ctx.arc(px, py, pr, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       ctx.restore();
 
-      // --- DRAW RETICLE (SFP vs FFP Scaling) ---
-      // SFP reticle stays fixed at 10x pixel scale; FFP scales dynamically with zoom
+      // 10. SUBTLE HEAT MIRAGE WAVES (Visual wind cue for naked eye)
+      const mirageCross = Math.sin((state.curWindClock * 30) * Math.PI / 180);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+      ctx.lineWidth = 1.5;
+      for (let m = 0; m < 5; m++) {
+        const my = horizonY + 12 + m * 22;
+        const shift = (tSec * state.curWindMph * 4 * mirageCross + m * 60) % W;
+        ctx.beginPath();
+        for (let wx = -50; wx < W + 50; wx += 20) {
+          const wy = my + Math.sin((wx + shift) * 0.04 + tSec * 5) * 2;
+          if (wx === -50) ctx.moveTo(wx, wy);
+          else ctx.lineTo(wx, wy);
+        }
+        ctx.stroke();
+      }
+
+      // 11. RETICLE RENDERING (SFP vs FFP Scaling)
       const reticlePxPerMrad = o.ffp ? pxPerTrueMrad : (10 * 2.6);
 
       ctx.strokeStyle = '#090b0e';
       ctx.fillStyle = '#090b0e';
       ctx.lineWidth = 1.5;
 
-      // Main Crosshairs
       ctx.beginPath();
       ctx.moveTo(cx, 25); ctx.lineTo(cx, H - 25);
       ctx.moveTo(25, cy); ctx.lineTo(W - 25, cy);
       ctx.stroke();
 
       if (o.reticle === 'mildot') {
-        // SFP Mil-Dot Reticle (dots every 1 MRAD)
         for (let m = -8; m <= 8; m++) {
           if (m === 0) continue;
           let pos = m * reticlePxPerMrad;
@@ -1062,7 +1197,6 @@
           ctx.fill();
         }
       } else if (o.reticle === 'simple_tree') {
-        // FFP Simple Christmas Tree (0.5 MRAD hashes + basic holdover grid)
         for (let m = -10; m <= 10; m += 0.5) {
           if (m === 0) continue;
           let pos = m * reticlePxPerMrad;
@@ -1072,7 +1206,6 @@
           ctx.moveTo(cx - tick, cy + pos); ctx.lineTo(cx + tick, cy + pos);
           ctx.stroke();
 
-          // Holdover horizontal wind hashes below center
           if (m >= 1 && Number.isInteger(m)) {
             let maxWind = Math.min(m, 5);
             for (let w = -maxWind; w <= maxWind; w++) {
@@ -1084,7 +1217,6 @@
           }
         }
       } else if (o.reticle === 'full_tree') {
-        // FFP Full Match Christmas Tree (0.2 MRAD hashes + dense grid)
         for (let m = -12; m <= 12; m += 0.2) {
           let mr = parseFloat(m.toFixed(1));
           if (mr === 0) continue;
@@ -1107,7 +1239,15 @@
         }
       }
 
-      // Outer Scope Tube Bezel
+      // 12. OUTER SCOPE TUBE BEZEL WITH VIGNETTE SHADOW
+      const vigGrad = ctx.createRadialGradient(cx, cy, cx - 55, cx, cy, cx - 18);
+      vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+      vigGrad.addColorStop(1, 'rgba(0,0,0,0.65)');
+      ctx.fillStyle = vigGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, cx - 18, 0, Math.PI * 2);
+      ctx.fill();
+
       ctx.strokeStyle = '#090b0e';
       ctx.lineWidth = 36;
       ctx.beginPath();
@@ -1156,6 +1296,7 @@
       state.targetType = document.getElementById('sel-target-type').value;
       state.distanceYd = parseFloat(document.getElementById('sel-distance').value);
       state.impacts = [];
+      state.dustPlumes = [];
       document.getElementById('hud-dist').innerText = `${state.distanceYd} YD`;
       setFeedback(`TARGET SET: ${state.distanceYd} YARDS`, "#e2e8f0");
     }
@@ -1184,7 +1325,6 @@
       else kesBtn.classList.add('locked');
     }
 
-    // Touch & Mouse drag on canvas for bipod pan & rear bag fine elevation
     let dragging = false, lastDragX = 0, lastDragY = 0;
     canvas.addEventListener('pointerdown', e => {
       dragging = true;
@@ -1203,7 +1343,6 @@
     });
     window.addEventListener('pointerup', () => dragging = false);
 
-    // Keyboard Controls
     window.addEventListener('keydown', e => {
       if (document.activeElement.tagName === 'INPUT') return;
       if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') stepTurret('elev', +0.1);
@@ -1219,7 +1358,6 @@
       if (e.key === 'b' || e.key === 'B') setBreathHold(false);
     });
 
-    // Armory UI
     function openArmory() {
       document.getElementById('modal-armory').classList.add('open');
       renderArmory();
@@ -1289,11 +1427,11 @@
         document.getElementById('disp-zoom-btn').innerText = `${state.zoom}x`;
       }
       state.impacts = [];
+      state.dustPlumes = [];
       updateTopUI();
       renderArmory();
     }
 
-    // Boot
     updateTopUI();
     requestAnimationFrame(drawFrame);
   </script>
