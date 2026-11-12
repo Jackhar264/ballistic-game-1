@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Precision Rifle Simulator</title>
+  <style>
+    :root {
+      --bg: #0f1215;
+      --panel: #181d23;
+      --panel-alt: #212830;
+      --accent: #e5a93b;
+      --text: #e2e8f0;
+      --muted: #8b9bb4;
+      --border: #2e3744;
+      --hit: #38a169;
+      --miss: #e53e3e;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+    body {
+      margin: 0;
+      padding: 8px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    /* Top Header Bar */
+    .top-bar {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel);
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+      margin-bottom: 6px;
+    }
+    .cash { color: var(--hit); font-weight: 800; font-size: 1rem; }
+    .ammo-cost { color: var(--accent); font-size: 0.78rem; }
+
+    /* Main Scope Viewport */
+    .viewport-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+      aspect-ratio: 1 / 1;
+      background: #1c2229;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      overflow: hidden;
+    }
+    canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
+
+    /* Overlay Badges inside Viewport */
+    .hud-overlay-tl {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(15, 18, 21, 0.78);
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 0.75rem;
+      pointer-events: none;
+    }
+    .hud-overlay-tr {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(15, 18, 21, 0.78);
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 0.75rem;
+      text-align: right;
+      pointer-events: none;
+    }
+    .hud-overlay-bl {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+    .shot-feedback {
+      background: rgba(15, 18, 21, 0.88);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      border: 1px solid var(--border);
+    }
+
+    /* Collapsible Floating Tool Windows (Solver & Kestrel) */
+    .floating-win {
+      display: none;
+      position: absolute;
+      top: 46px;
+      left: 10px;
+      right: 10px;
+      background: rgba(24, 29, 35, 0.96);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 10px;
+      z-index: 20;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.75);
+      font-size: 0.8rem;
+    }
+    .floating-win.open { display: block; }
+    .win-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .win-close {
+      background: #2e3744;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 8px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .solver-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .solver-grid input {
+      width: 100%;
+      background: #0f1215;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 5px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+    .solver-out {
+      display: flex;
+      justify-content: space-around;
+      background: #0f1215;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-weight: 700;
+    }
+
+    /* Range Setup Bar */
+    .range-bar {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: 1.2fr 1.2fr 0.8fr;
+      gap: 6px;
+      margin: 6px 0;
+    }
+    select, button {
+      font-family: inherit;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      padding: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    select:focus, button:focus { outline: none; border-color: var(--accent); }
+
+    /* Turrets, Zoom & Rear Bag Controls */
+    .controls-grid {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .ctrl-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 8px;
+      text-align: center;
+    }
+    .ctrl-lbl { font-size: 0.68rem; text-transform: uppercase; color: var(--muted); letter-spacing: 0.04em; }
+    .ctrl-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+    }
+    .btn-mini {
+      background: var(--panel-alt);
+      padding: 6px 10px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      min-width: 36px;
+    }
+    .btn-mini:active { background: var(--accent); color: #000; }
+    .readout { font-size: 1rem; font-weight: 700; color: var(--accent); }
+
+    /* Rear Bag & Breath Bar */
+    .support-bar {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .bag-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      margin-top: 4px;
+    }
+    .btn-breath {
+      background: #234e52;
+      border-color: #2c7a7b;
+      color: #e6fffa;
+      font-weight: 700;
+      font-size: 0.82rem;
+    }
+    .btn-breath.holding { background: #319795; color: #000; }
+
+    /* Action Toolbar */
+    .toolbar {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1.6fr;
+      gap: 6px;
+    }
+    .btn-tool { background: var(--panel-alt); font-size: 0.78rem; padding: 10px 4px; }
+    .btn-tool.locked { opacity: 0.45; cursor: not-allowed; }
+    .btn-fire {
+      background: #c05621;
+      border-color: #dd6b20;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+    .btn-fire:active { background: #9c4221; transform: scale(0.98); }
+    .btn-fire:disabled { background: #4a5568; border-color: #4a5568; cursor: wait; }
+
+    /* Armory Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      z-index: 50;
+      justify-content: center;
+      align-items: center;
+      padding: 12px;
+    }
+    .modal.open { display: flex; }
+    .modal-content {
+      background: var(--panel);
+      width: 100%;
+      max-width: 500px;
+      max-height: 88vh;
+      overflow-y: auto;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      padding: 14px;
+    }
+    .armory-cat {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 14px 0 6px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 3px;
+    }
+    .armory-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #222933;
+      gap: 8px;
+    }
+    .armory-item h4 { margin: 0 0 2px; font-size: 0.88rem; }
+    .armory-item p { margin: 0; font-size: 0.74rem; color: var(--muted); }
+    .btn-buy {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 6px 10px;
+      font-weight: 700;
+      font-size: 0.78rem;
+      white-space: nowrap;
+    }
+    .btn-buy.equipped { background: #2e3744; color: #a0aec0; cursor: default; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div>Bank: <span class="cash" id="ui-cash">$250.00</span></div>
+    <div id="ui-rifle-summary" style="font-weight:600; font-size:0.78rem;">.224 77gr SMK | 10x SFP</div>
+    <div class="ammo-cost" id="ui-ammo-cost">-$1.50/rd</div>
+  </div>
+
+  <!-- Scope Viewport -->
+  <div class="viewport-wrap">
+    <canvas id="scopeCanvas" width="520" height="520"></canvas>
+
+    <div class="hud-overlay-tl">
+      <div>Dist: <b id="hud-dist" style="color:var(--accent);">500 YD</b></div>
+      <div>Zoom: <b id="hud-zoom">10.0x</b> <span id="hud-focal" style="color:var(--muted);">(SFP)</span></div>
+      <div>Azimuth: <b>90° E</b></div>
+    </div>
+
+    <div class="hud-overlay-tr">
+      <div>Elev: <b id="hud-elev" style="color:var(--accent);">0.0 MRAD</b></div>
+      <div>Wind: <b id="hud-wind" style="color:var(--accent);">0.0 MRAD</b></div>
+      <div id="hud-lung-wrap" style="color:#4fd1c5; margin-top:2px;">O₂: <b id="hud-o2">100%</b></div>
+    </div>
+
+    <div class="hud-overlay-bl">
+      <div class="shot-feedback" id="hud-feedback">RANGE HOT — DIAL & FIRE</div>
+    </div>
+
+    <!-- Collapsible Ballistic Solver Window -->
+    <div class="floating-win" id="win-solver">
+      <div class="win-header">
+        <span>G7 RK4 BALLISTIC SOLVER</span>
+        <button class="win-close" onclick="toggleWin('win-solver')">X</button>
+      </div>
+      <div class="solver-grid">
+        <div>
+          <label style="font-size:0.68rem; color:var(--muted);">Range (yd)</label>
+          <input type="number" id="sol-range" value="500" oninput="runPopSolver()">
+        </div>
+        <div>
+          <label style="font-size:0.68rem; color:var(--muted);">Wind (mph)</label>
+          <input type="number" id="sol-wind" value="8" oninput="runPopSolver()">
+        </div>
+        <div>
+          <label style="font-size:0.68rem; color:var(--muted);">Clock (1-12)</label>
+          <input type="number" id="sol-clock" value="3" step="0.5" oninput="runPopSolver()">
+        </div>
+      </div>
+      <div class="solver-out">
+        <span>ELEV: <b id="sol-out-elev" style="color:var(--accent);">0.00 MRAD</b></span>
+        <span>WIND: <b id="sol-out-wind" style="color:var(--accent);">0.00 MRAD</b></span>
+        <span>TOF: <b id="sol-out-tof">0.00s</b></span>
+      </div>
+    </div>
+
+    <!-- Collapsible Kestrel Weather Station Window -->
+    <div class="floating-win" id="win-kestrel">
+      <div class="win-header">
+        <span>KESTREL 5700 BALLISTICS</span>
+        <button class="win-close" onclick="toggleWin('win-kestrel')">X</button>
+      </div>
+      <div class="solver-out" style="margin-bottom:6px;">
+        <span>WIND: <b id="kes-spd" style="color:#4fd1c5;">0.0 MPH</b></span>
+        <span>DIR: <b id="kes-dir" style="color:#4fd1c5;">3:00 (90°)</b></span>
+      </div>
+      <div class="solver-out" style="font-size:0.75rem; color:var(--muted);">
+        <span>TEMP: <b id="kes-temp" style="color:#fff;">64°F</b></span>
+        <span>PRESS: <b id="kes-press" style="color:#fff;">29.92 inHg</b></span>
+        <span>LAT: <b style="color:#fff;">35.8°N</b></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Range Target & Distance Controls -->
+  <div class="range-bar">
+    <select id="sel-target-type" onchange="changeRangeSetup()">
+      <option value="ipsc_full">Full IPSC (1.0x Pay)</option>
+      <option value="ipsc_23">2/3 IPSC (1.5x Pay)</option>
+      <option value="gong_15moa">1.5 MOA Gong (2.5x Pay)</option>
+    </select>
+    <select id="sel-distance" onchange="changeRangeSetup()">
+      <option value="300">300 Yards</option>
+      <option value="400">400 Yards</option>
+      <option value="500" selected>500 Yards</option>
+      <option value="650">650 Yards</option>
+      <option value="800">800 Yards</option>
+      <option value="900">900 Yards</option>
+      <option value="1000">1,000 Yards</option>
+      <option value="1200">1,200 Yards</option>
+    </select>
+    <button onclick="rerollWind()">New Wind</button>
+  </div>
+
+  <!-- Turrets & Magnification -->
+  <div class="controls-grid">
+    <div class="ctrl-box">
+      <div class="ctrl-lbl">Elevation Turret (0.1 MRAD) [W/S]</div>
+      <div class="ctrl-row">
+        <button class="btn-mini" onclick="stepTurret('elev', -0.1)">-</button>
+        <span class="readout" id="disp-elev">0.0</span>
+        <button class="btn-mini" onclick="stepTurret('elev', +0.1)">+</button>
+      </div>
+    </div>
+    <div class="ctrl-box">
+      <div class="ctrl-lbl">Windage Turret (0.1 MRAD) [A/D]</div>
+      <div class="ctrl-row">
+        <button class="btn-mini" onclick="stepTurret('wind', -0.1)">L</button>
+        <span class="readout" id="disp-wind">0.0</span>
+        <button class="btn-mini" onclick="stepTurret('wind', +0.1)">R</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rear Bag Squeeze, Zoom & Breath Hold -->
+  <div class="support-bar">
+    <div class="bag-box">
+      <div style="display:flex; justify-content:space-between; font-size:0.68rem; color:var(--muted);">
+        <span>L-HAND REAR BAG (VERT)</span>
+        <span id="disp-bag" style="color:var(--accent);">0.00 MRAD</span>
+      </div>
+      <input type="range" id="bag-slider" min="-2.5" max="2.5" step="0.05" value="0" oninput="updateBag(this.value)">
+    </div>
+    <div class="ctrl-box" style="display:flex; flex-direction:column; justify-content:space-between;">
+      <div class="ctrl-row" style="margin-top:0;">
+        <button class="btn-mini" style="padding:4px 8px;" onclick="stepZoom(-1)">-Z</button>
+        <span style="font-size:0.75rem; font-weight:700;" id="disp-zoom-btn">10x</span>
+        <button class="btn-mini" style="padding:4px 8px;" onclick="stepZoom(+1)">+Z</button>
+      </div>
+      <button class="btn-breath" id="btn-breath"
+        onmousedown="setBreathHold(true)" onmouseup="setBreathHold(false)" onmouseleave="setBreathHold(false)"
+        ontouchstart="setBreathHold(true); event.preventDefault();" ontouchend="setBreathHold(false)">
+        HOLD BREATH [B]
+      </button>
+    </div>
+  </div>
+
+  <!-- Bottom Action Toolbar -->
+  <div class="toolbar">
+    <button class="btn-tool" onclick="toggleWin('win-solver')">SOLVER</button>
+    <button class="btn-tool locked" id="btn-kestrel" onclick="openKestrel()">KESTREL</button>
+    <button class="btn-tool" onclick="openArmory()">ARMORY</button>
+    <button class="btn-fire" id="btn-fire" onclick="fireRound()">FIRE [SPACE]</button>
+  </div>
+
+  <!-- Armory Modal -->
+  <div class="modal" id="modal-armory">
+    <div class="modal-content">
+      <div class="win-header">
+        <span>ARMORY & EQUIPMENT UPGRADES</span>
+        <button class="win-close" onclick="closeArmory()">CLOSE</button>
+      </div>
+      <div id="armory-list"></div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. JBM G7 DRAG TABLE & BALLISTIC CONSTANTS
+    // =========================================================================
+    const G7_TABLE = [
+      [0.00, 0.1198], [0.05, 0.1197], [0.10, 0.1196], [0.15, 0.1194],
+      [0.20, 0.1193], [0.25, 0.1194], [0.30, 0.1194], [0.35, 0.1194],
+      [0.40, 0.1193], [0.45, 0.1193], [0.50, 0.1194], [0.55, 0.1193],
+      [0.60, 0.1194], [0.65, 0.1197], [0.70, 0.1202], [0.725, 0.1207],
+      [0.75, 0.1215], [0.775, 0.1226], [0.80, 0.1242], [0.825, 0.1266],
+      [0.85, 0.1306], [0.875, 0.1368], [0.90, 0.1464], [0.925, 0.1660],
+      [0.95, 0.2054], [0.975, 0.2993], [1.00, 0.3803], [1.025, 0.4015],
+      [1.05, 0.4043], [1.075, 0.4034], [1.10, 0.4014], [1.125, 0.3987],
+      [1.15, 0.3955], [1.20, 0.3884], [1.25, 0.3810], [1.30, 0.3732],
+      [1.35, 0.3657], [1.40, 0.3580], [1.50, 0.3440], [1.55, 0.3376],
+      [1.60, 0.3315], [1.65, 0.3260], [1.70, 0.3209], [1.75, 0.3160],
+      [1.80, 0.3117], [1.85, 0.3078], [1.90, 0.3042], [1.95, 0.3010],
+      [2.00, 0.2980], [2.05, 0.2951], [2.10, 0.2922], [2.15, 0.2892],
+      [2.20, 0.2864], [2.25, 0.2835], [2.30, 0.2807], [2.35, 0.2779],
+      [2.40, 0.2752], [2.45, 0.2725], [2.50, 0.2697], [2.55, 0.2670],
+      [2.60, 0.2643], [2.65, 0.2615], [2.70, 0.2588], [2.75, 0.2561],
+      [2.80, 0.2533], [2.85, 0.2506], [2.90, 0.2479], [2.95, 0.2451],
+      [3.00, 0.2424], [3.10, 0.2368], [3.20, 0.2313], [3.30, 0.2258],
+      [3.40, 0.2205], [3.50, 0.2154], [3.60, 0.2106], [3.70, 0.2060],
+      [3.80, 0.2017], [3.90, 0.1975], [4.00, 0.1935], [4.20, 0.1861],
+      [4.40, 0.1793], [4.60, 0.1730], [4.80, 0.1672], [5.00, 0.1618]
+    ];
+
+    function getCd(mach) {
+      if (mach <= G7_TABLE[0][0]) return G7_TABLE[0][1];
+      if (mach >= G7_TABLE[G7_TABLE.length - 1][0]) return G7_TABLE[G7_TABLE.length - 1][1];
+      let low = 0, high = G7_TABLE.length - 1;
+      while (low <= high) {
+        let mid = (low + high) >> 1;
+        if (G7_TABLE[mid][0] < mach) low = mid + 1;
+        else high = mid - 1;
+      }
+      let [m0, cd0] = G7_TABLE[low - 1];
+      let [m1, cd1] = G7_TABLE[low];
+      return cd0 + ((mach - m0) / (m1 - m0)) * (cd1 - cd0);
+    }
+
+    function gaussianRandom(mean = 0, stdDev = 1) {
+      let u = 1 - Math.random();
+      let v = Math.random();
+      let z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+      return z * stdDev + mean;
+    }
+
+    // =========================================================================
+    // 2. COMPLETE 19-BULLET LIBRARY & EQUIPMENT CATALOG
+    // =========================================================================
+    const BULLETS = [
+      // .224
+      { id: 'sierra_224_77', name: '.224 Sierra 77gr SMK', cost: 0, roundCost: 1.50, bc: 0.190, mv: 2750, dia: 0.224, wt: 77.0, len: 0.990, twist: 8.0 },
+      { id: 'hornady_224_75', name: '.224 Hornady 75gr ELD-M', cost: 120, roundCost: 1.60, bc: 0.212, mv: 2810, dia: 0.224, wt: 75.0, len: 1.110, twist: 8.0 },
+      { id: 'berger_224_805', name: '.224 Berger 80.5gr Fullbore', cost: 220, roundCost: 1.85, bc: 0.226, mv: 2780, dia: 0.224, wt: 80.5, len: 1.095, twist: 7.5 },
+      { id: 'hornady_224_88', name: '.224 Hornady 88gr ELD-M', cost: 320, roundCost: 1.95, bc: 0.274, mv: 2680, dia: 0.224, wt: 88.0, len: 1.240, twist: 7.0 },
+
+      // .243
+      { id: 'hornady_243_105', name: '.243 Hornady 105gr BTHP', cost: 450, roundCost: 2.10, bc: 0.265, mv: 2980, dia: 0.243, wt: 105.0, len: 1.230, twist: 8.0 },
+      { id: 'sierra_243_107', name: '.243 Sierra 107gr SMK', cost: 550, roundCost: 2.25, bc: 0.262, mv: 2960, dia: 0.243, wt: 107.0, len: 1.230, twist: 8.0 },
+      { id: 'hornady_243_108', name: '.243 Hornady 108gr ELD-M', cost: 650, roundCost: 2.30, bc: 0.275, mv: 2950, dia: 0.243, wt: 108.0, len: 1.265, twist: 7.5 },
+      { id: 'hornady_243_109', name: '.243 Hornady 109gr ELD-M', cost: 780, roundCost: 2.45, bc: 0.295, mv: 2930, dia: 0.243, wt: 109.0, len: 1.315, twist: 7.5 },
+      { id: 'berger_243_120', name: '.243 Berger 120gr LR Hybrid', cost: 950, roundCost: 2.75, bc: 0.328, mv: 2860, dia: 0.243, wt: 120.0, len: 1.383, twist: 7.0 },
+
+      // .257
+      { id: 'hornady_257_134', name: '.257 Hornady 134gr ELD-M', cost: 1150, roundCost: 2.90, bc: 0.325, mv: 2880, dia: 0.257, wt: 134.0, len: 1.410, twist: 7.5 },
+      { id: 'berger_257_135', name: '.257 Berger 135gr LR Hybrid', cost: 1350, roundCost: 3.10, bc: 0.334, mv: 2870, dia: 0.257, wt: 135.0, len: 1.416, twist: 7.5 },
+
+      // .264
+      { id: 'hornady_264_140', name: '.264 Hornady 140gr ELD-M', cost: 1500, roundCost: 3.00, bc: 0.315, mv: 2820, dia: 0.264, wt: 140.0, len: 1.380, twist: 8.0 },
+      { id: 'berger_264_140', name: '.264 Berger 140gr Hybrid', cost: 1650, roundCost: 3.25, bc: 0.311, mv: 2820, dia: 0.264, wt: 140.0, len: 1.405, twist: 8.0 },
+      { id: 'berger_264_144', name: '.264 Berger 144gr LR Hybrid', cost: 1850, roundCost: 3.40, bc: 0.336, mv: 2800, dia: 0.264, wt: 144.0, len: 1.415, twist: 8.0 },
+      { id: 'barnes_264_145', name: '.264 Barnes 145gr Match Burner', cost: 1950, roundCost: 3.30, bc: 0.341, mv: 2790, dia: 0.264, wt: 145.0, len: 1.466, twist: 7.5 },
+      { id: 'hornady_264_147', name: '.264 Hornady 147gr ELD-M', cost: 2100, roundCost: 3.35, bc: 0.335, mv: 2780, dia: 0.264, wt: 147.0, len: 1.440, twist: 7.5 },
+      { id: 'sierra_264_150', name: '.264 Sierra 150gr SMK', cost: 2300, roundCost: 3.60, bc: 0.356, mv: 2760, dia: 0.264, wt: 150.0, len: 1.510, twist: 7.5 },
+      { id: 'hornady_264_153', name: '.264 Hornady 153gr A-Tip', cost: 2600, roundCost: 4.20, bc: 0.354, mv: 2750, dia: 0.264, wt: 153.0, len: 1.505, twist: 7.5 },
+      { id: 'berger_264_1535', name: '.264 Berger 153.5gr LR Hybrid', cost: 2900, roundCost: 3.90, bc: 0.356, mv: 2765, dia: 0.264, wt: 153.5, len: 1.465, twist: 7.5 }
+    ];
+
+    const OPTICS = [
+      { id: 'opt_1', name: '3-10x42 SFP Mil-Dot', cost: 0, minZoom: 3, maxZoom: 10, ffp: false, reticle: 'mildot', desc: 'Second Focal Plane (Mil-dots true ONLY at 10x).' },
+      { id: 'opt_2', name: '5-15x50 FFP Simple Tree', cost: 850, minZoom: 5, maxZoom: 15, ffp: true, reticle: 'simple_tree', desc: 'First Focal Plane with 0.5 MRAD stadia & holdover tree.' },
+      { id: 'opt_3', name: '5-25x56 FFP Full Christmas Tree', cost: 2200, minZoom: 5, maxZoom: 25, ffp: true, reticle: 'full_tree', desc: 'First Focal Plane 0.2 MRAD grid reticle with wind dots.' }
+    ];
+
+    const WIND_GEAR = [
+      { id: 'wind_1', name: 'No Wind Gear (Naked Eye)', cost: 0, desc: 'Read bullet splash dust & mirage only.' },
+      { id: 'wind_2', name: 'Downrange Range Wind Flag', cost: 400, desc: 'Places a physical wind flag near target to judge speed/direction.' },
+      { id: 'wind_3', name: 'Kestrel 5700 Handheld Meter', cost: 1100, desc: 'Unlocks live collapsible Kestrel weather station HUD.' }
+    ];
+
+    const BRASS_POWDER = [
+      { id: 'ammo_1', name: 'Standard Bulk Cases & Powder', cost: 0, mvBonus: 0, mvSD: 18, bcSDPct: 0.015, costMult: 1.0, desc: 'High MV spread (SD 18 fps) & 1.5% BC variance.' },
+      { id: 'ammo_2', name: 'Match Brass & Temp-Stable Powder', cost: 600, mvBonus: 25, mvSD: 6, bcSDPct: 0.006, costMult: 1.3, desc: 'Tight velocity spread (SD 6 fps) & consistent ignition.' },
+      { id: 'ammo_3', name: '80,000 PSI Steel-Alloy Hybrid Case', cost: 1800, mvBonus: 185, mvSD: 4, bcSDPct: 0.004, costMult: 1.8, desc: 'High-pressure case architecture (+185 fps boost, SD 4 fps).' }
+    ];
+
+    const BARRELS = [
+      { id: 'brl_1', name: 'Factory Rack-Grade Barrel', cost: 0, groupMoa: 1.10, desc: '1.10 MOA mechanical cone of dispersion.' },
+      { id: 'brl_2', name: 'Custom Cut-Rifled Match Barrel', cost: 750, groupMoa: 0.55, desc: '0.55 MOA precision hand-lapped barrel.' },
+      { id: 'brl_3', name: 'Blueprinted Action + Heavy MTU', cost: 1900, groupMoa: 0.28, desc: '0.28 MOA benchrest-grade action & barrel.' }
+    ];
+
+    const CHASSIS = [
+      { id: 'chs_1', name: 'Lightweight Polymer Stock', cost: 0, groupBonus: 0.00, recoilMult: 1.0, swayMult: 1.0, desc: 'Standard weight; higher recoil jump & sway.' },
+      { id: 'chs_2', name: 'Aluminum V-Block Chassis', cost: 550, groupBonus: -0.04, recoilMult: 0.72, swayMult: 0.82, desc: 'Better tracking (-28% recoil jump, -18% sway).' },
+      { id: 'chs_3', name: 'Heavy PRS Competition Chassis', cost: 1450, groupBonus: -0.08, recoilMult: 0.45, swayMult: 0.65, desc: 'Heavy steel-weighted chassis (-55% recoil, -35% sway).' }
+    ];
+
+    // =========================================================================
+    // 3. PLAYER & SIMULATION STATE
+    // =========================================================================
+    let state = {
+      cash: 250.00,
+      unlocked: ['sierra_224_77', 'opt_1', 'wind_1', 'ammo_1', 'brl_1', 'chs_1'],
+      eq: {
+        bullet: 'sierra_224_77',
+        optic: 'opt_1',
+        wind: 'wind_1',
+        ammo: 'ammo_1',
+        barrel: 'brl_1',
+        chassis: 'chs_1'
+      },
+      // Range settings
+      targetType: 'ipsc_full', // ipsc_full, ipsc_23, gong_15moa
+      distanceYd: 500,
+      azimuthDeg: 90, // 90 deg East (shows Coriolis horizontal + Eötvös)
+      latitudeDeg: 35.8,
+      tempF: 64,
+      pressInHg: 29.92,
+
+      // Dynamic Wind Wave
+      baseWindMph: 8.5,
+      baseWindClock: 3.0,
+      curWindMph: 8.5,
+      curWindClock: 3.0,
+      windPhase: 0,
+
+      // Shooter Controls
+      turretElev: 0.0,
+      turretWind: 0.0,
+      zoom: 10,
+      bagElevMrad: 0.0,
+      aimPanX: 0.0, // Horizontal bipod pan (MRAD)
+      aimPanY: 0.0, // Coarse vertical pan (MRAD)
+
+      // Sway, Breath & Recoil
+      oxygen: 100,
+      holdingBreath: false,
+      recoilY: 0,
+      recoilX: 0,
+      swayX: 0,
+      swayY: 0,
+
+      // Visual impacts & splashes
+      impacts: [], // { xMrad, yMrad, isHit }
+      inFlight: false
+    };
+
+    // =========================================================================
+    // 4. 3D RK4 + SPIN DRIFT + CORIOLIS BALLISTIC SOLVER
+    // =========================================================================
+    function solveBallistics(params) {
+      const {
+        targetYd, mvFps, bcG7, wtGr, diaIn, lenIn, twistIn,
+        tempF, pressInHg, windMph, windClock, latDeg, azDeg
+      } = params;
+
+      const g = 9.80665;
+      const v0 = mvFps * 0.3048;
+      const sightH_m = 1.75 * 0.0254;
+      const zero_m = 100 * 0.9144;
+      const target_m = targetYd * 0.9144;
+
+      // Atmosphere
+      const tempK = (tempF - 32) * (5 / 9) + 273.15;
+      const speedSound = Math.sqrt(1.4 * 287.05 * tempK);
+      const density = (pressInHg * 3386.39) / (287.05 * tempK);
+      const refArea = (Math.PI / 4) * (0.0254 ** 2);
+      const dragConst = (density * refArea) / (2.0 * 0.45359237 * bcG7);
+
+      // Apparent Wind Vector
+      const windRad = (windClock * 30.0) * (Math.PI / 180);
+      const wMps = windMph * 0.44704;
+      const wx = -wMps * Math.cos(windRad);
+      const wz = -wMps * Math.sin(windRad);
+
+      function derivs(vx, vy, vz) {
+        const vrx = vx - wx, vrz = vz - wz;
+        const vr = Math.sqrt(vrx * vrx + vy * vy + vrz * vrz);
+        const ad = dragConst * (vr * vr) * getCd(vr / speedSound);
+        return [-ad * (vrx / vr), -g - ad * (vy / vr), -ad * (vrz / vr)];
+      }
+
+      // 100yd Zero Angle via RK4
+      function zeroRK4(angle) {
+        let x = 0, y = -sightH_m, vx = v0 * Math.cos(angle), vy = v0 * Math.sin(angle);
+        const dt = 0.0008;
+        while (x < zero_m) {
+          const zd = (cvx, cvy) => {
+            const vc = Math.sqrt(cvx * cvx + cvy * cvy);
+            const ad = dragConst * (vc * vc) * getCd(vc / speedSound);
+            return [-ad * (cvx / vc), -g - ad * (cvy / vc)];
+          };
+          const [k1x, k1y] = zd(vx, vy);
+          const [k2x, k2y] = zd(vx + 0.5 * dt * k1x, vy + 0.5 * dt * k1y);
+          const [k3x, k3y] = zd(vx + 0.5 * dt * k2x, vy + 0.5 * dt * k2y);
+          const [k4x, k4y] = zd(vx + dt * k3x, vy + dt * k3y);
+          x += vx * dt; y += vy * dt;
+          vx += (dt / 6) * (k1x + 2 * k2x + 2 * k3x + k4x);
+          vy += (dt / 6) * (k1y + 2 * k2y + 2 * k3y + k4y);
+        }
+        return y;
+      }
+
+      let theta = Math.atan(sightH_m / zero_m);
+      for (let i = 0; i < 5; i++) {
+        let err = zeroRK4(theta);
+        if (Math.abs(err) < 0.00001) break;
+        theta -= err / zero_m;
+      }
+
+      // 3D RK4 Trajectory Integration
+      const dt = 0.0008;
+      let t = 0, x = 0, y = -sightH_m, z = 0;
+      let vx = v0 * Math.cos(theta), vy = v0 * Math.sin(theta), vz = 0;
+      let px, py, pz, pt;
+
+      while (x < target_m) {
+        px = x; py = y; pz = z; pt = t;
+        const [k1x, k1y, k1z] = derivs(vx, vy, vz);
+        const [k2x, k2y, k2z] = derivs(vx + 0.5 * dt * k1x, vy + 0.5 * dt * k1y, vz + 0.5 * dt * k1z);
+        const [k3x, k3y, k3z] = derivs(vx + 0.5 * dt * k2x, vy + 0.5 * dt * k2y, vz + 0.5 * dt * k2z);
+        const [k4x, k4y, k4z] = derivs(vx + dt * k3x, vy + dt * k3y, vz + dt * k3z);
+
+        x += vx * dt; y += vy * dt; z += vz * dt;
+        vx += (dt / 6) * (k1x + 2 * k2x + 2 * k3x + k4x);
+        vy += (dt / 6) * (k1y + 2 * k2y + 2 * k3y + k4y);
+        vz += (dt / 6) * (k1z + 2 * k2z + 2 * k3z + k4z);
+        t += dt;
+      }
+
+      const frac = (x !== px) ? (target_m - px) / (x - px) : 1.0;
+      const yFinal = py + frac * (y - py);
+      const zFinal = pz + frac * (z - pz);
+      const tFinal = pt + frac * (t - pt);
+
+      // Gyroscopic Spin Drift (Miller + Litz)
+      const tRatio = twistIn / diaIn;
+      const lRatio = lenIn / diaIn;
+      const ft = ((tempF + 460) / 519.0) * (29.92 / pressInHg);
+      let sg = (30.0 * wtGr) / ((tRatio ** 2) * (diaIn ** 3) * lRatio * (1.0 + (lRatio ** 2)));
+      sg = (sg * Math.cbrt(mvFps / 2800.0)) / ft;
+      const spinDrift_m = (1.25 * (sg + 1.2) * (tFinal ** 1.83)) * 0.0254;
+
+      // Coriolis & Eötvös Effect
+      const omega = 7.2921159e-5; // Earth angular velocity (rad/s)
+      const latRad = latDeg * (Math.PI / 180);
+      const azRad = azDeg * (Math.PI / 180);
+      // Horizontal Coriolis deflection (rightward in Northern Hemisphere)
+      const coriolisHoriz_m = omega * target_m * tFinal * Math.sin(latRad);
+      // Vertical Eötvös deflection (shooting East lifts bullet slightly)
+      const coriolisVert_m = 2 * omega * v0 * tFinal * Math.cos(latRad) * Math.sin(azRad) * (tFinal * 0.5);
+
+      const totalY_m = yFinal + coriolisVert_m;
+      const totalZ_m = zFinal + spinDrift_m + coriolisHoriz_m;
+
+      return {
+        elevMrad: Math.atan2(-totalY_m, target_m) * 1000.0,
+        windMrad: Math.atan2(-totalZ_m, target_m) * 1000.0,
+        tof: tFinal
+      };
+    }
+
+    // =========================================================================
+    // 5. POP-UP SOLVER & KESTREL HELPERS
+    // =========================================================================
+    function getEquipped() {
+      return {
+        b: BULLETS.find(x => x.id === state.eq.bullet),
+        o: OPTICS.find(x => x.id === state.eq.optic),
+        w: WIND_GEAR.find(x => x.id === state.eq.wind),
+        a: BRASS_POWDER.find(x => x.id === state.eq.ammo),
+        brl: BARRELS.find(x => x.id === state.eq.barrel),
+        chs: CHASSIS.find(x => x.id === state.eq.chassis)
+      };
+    }
+
+    function runPopSolver() {
+      const { b, a } = getEquipped();
+      const r = parseFloat(document.getElementById('sol-range').value) || 500;
+      const ws = parseFloat(document.getElementById('sol-wind').value) || 0;
+      const wc = parseFloat(document.getElementById('sol-clock').value) || 3;
+
+      const sol = solveBallistics({
+        targetYd: r,
+        mvFps: b.mv + a.mvBonus,
+        bcG7: b.bc,
+        wtGr: b.wt,
+        diaIn: b.dia,
+        lenIn: b.len,
+        twistIn: b.twist,
+        tempF: state.tempF,
+        pressInHg: state.pressInHg,
+        windMph: ws,
+        windClock: wc,
+        latDeg: state.latitudeDeg,
+        azDeg: state.azimuthDeg
+      });
+
+      document.getElementById('sol-out-elev').innerText = `${sol.elevMrad.toFixed(2)} MRAD`;
+      const dir = sol.windMrad >= 0 ? 'R' : 'L';
+      document.getElementById('sol-out-wind').innerText = `${Math.abs(sol.windMrad).toFixed(2)} ${dir}`;
+      document.getElementById('sol-out-tof').innerText = `${sol.tof.toFixed(2)}s`;
+    }
+
+    function toggleWin(id) {
+      const el = document.getElementById(id);
+      const isOpen = el.classList.contains('open');
+      document.querySelectorAll('.floating-win').forEach(w => w.classList.remove('open'));
+      if (!isOpen) {
+        el.classList.add('open');
+        if (id === 'win-solver') {
+          document.getElementById('sol-range').value = state.distanceYd;
+          runPopSolver();
+        }
+      }
+    }
+
+    function openKestrel() {
+      if (state.eq.wind !== 'wind_3') {
+        setFeedback("LOCKED — PURCHASE KESTREL IN ARMORY", "#e5a93b");
+        return;
+      }
+      toggleWin('win-kestrel');
+    }
+
+    // =========================================================================
+    // 6. FIRING LOGIC, STOCHASTIC DISPERSION & HIT DETECTION
+    // =========================================================================
+    function fireRound() {
+      if (state.inFlight) return;
+      const { b, a, brl, chs } = getEquipped();
+      const roundCost = parseFloat((b.roundCost * a.costMult).toFixed(2));
+
+      if (state.cash < roundCost) {
+        setFeedback("INSUFFICIENT FUNDS FOR AMMO!", "#e53e3e");
+        return;
+      }
+
+      state.cash -= roundCost;
+      updateTopUI();
+      state.inFlight = true;
+      document.getElementById('btn-fire').disabled = true;
+      setFeedback("SHOT FIRED — TRACKING...", "#e5a93b");
+
+      // 1. Apply stochastic shot-to-shot MV and BC variance
+      const actualMV = gaussianRandom(b.mv + a.mvBonus, a.mvSD);
+      const actualBC = gaussianRandom(b.bc, b.bc * a.bcSDPct);
+
+      // 2. Solve true trajectory at instant of trigger break
+      const trueSol = solveBallistics({
+        targetYd: state.distanceYd,
+        mvFps: actualMV,
+        bcG7: actualBC,
+        wtGr: b.wt,
+        diaIn: b.dia,
+        lenIn: b.len,
+        twistIn: b.twist,
+        tempF: state.tempF,
+        pressInHg: state.pressInHg,
+        windMph: state.curWindMph,
+        windClock: state.curWindClock,
+        latDeg: state.latitudeDeg,
+        azDeg: state.azimuthDeg
+      });
+
+      // 3. Apply mechanical barrel/chassis dispersion cone (MOA -> MRAD)
+      const effectiveMoa = Math.max(0.15, brl.groupMoa + chs.groupBonus);
+      const dispStdMrad = (effectiveMoa * 0.290888) / 2.5;
+      const dispX = gaussianRandom(0, dispStdMrad);
+      const dispY = gaussianRandom(0, dispStdMrad);
+
+      // 4. Calculate where crosshair is currently pointing relative to target center (MRAD)
+      // Total dialed/held elevation = turretElev + bagElevMrad + aimPanY + swayY
+      const totalAimElevMrad = state.turretElev + state.bagElevMrad + state.aimPanY - state.swayY;
+      const totalAimWindMrad = state.turretWind + state.aimPanX + state.swayX;
+
+      // Impact offset relative to target bullseye (MRAD)
+      const impactX_Mrad = (totalAimWindMrad - trueSol.windMrad) + dispX;
+      const impactY_Mrad = (totalAimElevMrad - trueSol.elevMrad) + dispY;
+
+      // 5. Trigger Recoil Impulse immediately
+      state.recoilY = 2.4 * chs.recoilMult * (b.wt / 100);
+      state.recoilX = gaussianRandom(0, 0.45 * chs.recoilMult);
+
+      // 6. Resolve impact after Time of Flight
+      setTimeout(() => {
+        state.inFlight = false;
+        document.getElementById('btn-fire').disabled = false;
+
+        // Convert impact MRAD offset to inches at target distance
+        const inchesPerMrad = (state.distanceYd * 36) / 1000;
+        const hitXIn = impactX_Mrad * inchesPerMrad;
+        const hitYIn = impactY_Mrad * inchesPerMrad;
+
+        const isHit = checkTargetHit(hitXIn, hitYIn);
+        state.impacts.push({ xMrad: impactX_Mrad, yMrad: impactY_Mrad, isHit });
+        if (state.impacts.length > 12) state.impacts.shift();
+
+        if (isHit) {
+          const mult = state.targetType === 'gong_15moa' ? 2.5 : (state.targetType === 'ipsc_23' ? 1.5 : 1.0);
+          const payout = parseFloat(((state.distanceYd * 0.08) * mult).toFixed(2));
+          state.cash += payout;
+          updateTopUI();
+          setFeedback(`STEEL IMPACT! +$${payout.toFixed(2)} (${hitXIn >= 0 ? '+' : ''}${hitXIn.toFixed(1)}" H, ${hitYIn >= 0 ? '+' : ''}${hitYIn.toFixed(1)}" V)`, "#38a169");
+        } else {
+          setFeedback(`MISS! Splash: ${hitXIn >= 0 ? '+' : ''}${hitXIn.toFixed(1)}" R/L, ${hitYIn >= 0 ? '+' : ''}${hitYIn.toFixed(1)}" U/D`, "#e53e3e");
+        }
+      }, Math.min(trueSol.tof * 850, 2200));
+    }
+
+    function checkTargetHit(xIn, yIn) {
+      if (state.targetType === 'ipsc_full') {
+        // 18" wide x 30" tall silhouette
+        return Math.abs(xIn) <= 9.0 && Math.abs(yIn) <= 15.0;
+      } else if (state.targetType === 'ipsc_23') {
+        // 12" wide x 20" tall silhouette
+        return Math.abs(xIn) <= 6.0 && Math.abs(yIn) <= 10.0;
+      } else {
+        // 1.5 MOA round plate (1 MOA = 1.047" per 100 yd)
+        const radiusIn = (1.5 * 1.047 * (state.distanceYd / 100)) / 2;
+        return Math.sqrt(xIn * xIn + yIn * yIn) <= radiusIn;
+      }
+    }
+
+    // =========================================================================
+    // 7. CANVAS SCOPE & RETICLE RENDERER (SFP vs FFP)
+    // =========================================================================
+    const canvas = document.getElementById('scopeCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function drawFrame(timestamp) {
+      // Update continuous gentle wind wave
+      state.windPhase += 0.008;
+      state.curWindMph = Math.max(0.5, state.baseWindMph + Math.sin(state.windPhase) * 1.8 + Math.cos(state.windPhase * 0.43) * 0.9);
+      state.curWindClock = state.baseWindClock + Math.sin(state.windPhase * 0.6) * 0.45;
+      if (state.curWindClock <= 0) state.curWindClock += 12;
+      if (state.curWindClock > 12) state.curWindClock -= 12;
+
+      // Update Kestrel live readout if unlocked
+      if (state.eq.wind === 'wind_3') {
+        document.getElementById('kes-spd').innerText = `${state.curWindMph.toFixed(1)} MPH`;
+        document.getElementById('kes-dir').innerText = `${state.curWindClock.toFixed(1)} Clock`;
+      }
+
+      // Update Breathing Sway & Oxygen
+      const { o, chs } = getEquipped();
+      if (state.holdingBreath && state.oxygen > 0) {
+        state.oxygen = Math.max(0, state.oxygen - 0.38);
+      } else {
+        state.holdingBreath = false;
+        document.getElementById('btn-breath').classList.remove('holding');
+        state.oxygen = Math.min(100, state.oxygen + 0.25);
+      }
+      document.getElementById('hud-o2').innerText = `${Math.round(state.oxygen)}%`;
+
+      const tSec = timestamp * 0.001;
+      const breathMult = state.holdingBreath ? 0.12 : (1.0 + (100 - state.oxygen) * 0.015);
+      const swayAmp = 0.22 * chs.swayMult * breathMult;
+      state.swayX = Math.sin(tSec * 1.7) * swayAmp;
+      state.swayY = Math.sin(tSec * 3.4) * (swayAmp * 0.65);
+
+      // Decay Recoil Recovery
+      state.recoilY *= 0.88;
+      state.recoilX *= 0.88;
+
+      // --- RENDER WORLD ---
+      const W = canvas.width, H = canvas.height;
+      const cx = W / 2, cy = H / 2;
+
+      // Pixels per true angular MRAD scales with magnification
+      const pxPerTrueMrad = state.zoom * 2.6;
+
+      // World shift relative to crosshair center
+      const viewOffsetX = -(state.aimPanX + state.swayX + state.recoilX) * pxPerTrueMrad;
+      const viewOffsetY = (state.aimPanY + state.bagElevMrad - state.swayY + state.recoilY) * pxPerTrueMrad;
+
+      // Sky & Berm Background
+      ctx.fillStyle = '#3c4c5e';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#4a4339'; // Dirt berm
+      ctx.fillRect(0, cy + viewOffsetY - 40, W, H);
+
+      ctx.save();
+      ctx.translate(cx + viewOffsetX, cy + viewOffsetY);
+
+      // Draw Target Plate at true angular size
+      const inchesPerMrad = (state.distanceYd * 36) / 1000;
+      ctx.fillStyle = '#e2e8f0';
+      ctx.strokeStyle = '#1a202c';
+      ctx.lineWidth = 2;
+
+      if (state.targetType === 'ipsc_full' || state.targetType === 'ipsc_23') {
+        const scale = state.targetType === 'ipsc_23' ? (2 / 3) : 1.0;
+        const wPx = ((18 * scale) / inchesPerMrad) * pxPerTrueMrad;
+        const hPx = ((30 * scale) / inchesPerMrad) * pxPerTrueMrad;
+        // Torso
+        ctx.fillRect(-wPx / 2, -hPx * 0.35, wPx, hPx * 0.85);
+        ctx.strokeRect(-wPx / 2, -hPx * 0.35, wPx, hPx * 0.85);
+        // Headbox
+        ctx.fillRect(-wPx * 0.25, -hPx * 0.5, wPx * 0.5, hPx * 0.15);
+        ctx.strokeRect(-wPx * 0.25, -hPx * 0.5, wPx * 0.5, hPx * 0.15);
+      } else {
+        const diaIn = 1.5 * 1.047 * (state.distanceYd / 100);
+        const rPx = ((diaIn / 2) / inchesPerMrad) * pxPerTrueMrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, Math.max(rPx, 3), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // Draw Downrange Wind Flag (Tier 2+ Wind Intel)
+      if (state.eq.wind === 'wind_2' || state.eq.wind === 'wind_3') {
+        const flagX = ((38 / inchesPerMrad) * pxPerTrueMrad);
+        const poleH = (45 / inchesPerMrad) * pxPerTrueMrad;
+        ctx.strokeStyle = '#cbd5e0';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(flagX, 20);
+        ctx.lineTo(flagX, 20 - poleH);
+        ctx.stroke();
+
+        // Flag deflection proportional to crosswind component
+        const crossFactor = Math.sin((state.curWindClock * 30) * Math.PI / 180);
+        const flagLen = Math.min(state.curWindMph * 2.2, 28) * crossFactor;
+        ctx.fillStyle = '#f56565';
+        ctx.beginPath();
+        ctx.moveTo(flagX, 20 - poleH);
+        ctx.lineTo(flagX + flagLen, 20 - poleH + (14 - Math.min(state.curWindMph, 12)));
+        ctx.lineTo(flagX, 20 - poleH + 10);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Draw Bullet Impacts & Dirt Splashes
+      state.impacts.forEach(imp => {
+        const ix = imp.xMrad * pxPerTrueMrad;
+        const iy = -imp.yMrad * pxPerTrueMrad;
+        ctx.fillStyle = imp.isHit ? '#2f855a' : '#d69e2e';
+        ctx.beginPath();
+        ctx.arc(ix, iy, imp.isHit ? 3.5 : 5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.restore();
+
+      // --- DRAW RETICLE (SFP vs FFP Scaling) ---
+      // SFP reticle stays fixed at 10x pixel scale; FFP scales dynamically with zoom
+      const reticlePxPerMrad = o.ffp ? pxPerTrueMrad : (10 * 2.6);
+
+      ctx.strokeStyle = '#090b0e';
+      ctx.fillStyle = '#090b0e';
+      ctx.lineWidth = 1.5;
+
+      // Main Crosshairs
+      ctx.beginPath();
+      ctx.moveTo(cx, 25); ctx.lineTo(cx, H - 25);
+      ctx.moveTo(25, cy); ctx.lineTo(W - 25, cy);
+      ctx.stroke();
+
+      if (o.reticle === 'mildot') {
+        // SFP Mil-Dot Reticle (dots every 1 MRAD)
+        for (let m = -8; m <= 8; m++) {
+          if (m === 0) continue;
+          let pos = m * reticlePxPerMrad;
+          ctx.beginPath();
+          ctx.arc(cx + pos, cy, 2.5, 0, Math.PI * 2);
+          ctx.arc(cx, cy + pos, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (o.reticle === 'simple_tree') {
+        // FFP Simple Christmas Tree (0.5 MRAD hashes + basic holdover grid)
+        for (let m = -10; m <= 10; m += 0.5) {
+          if (m === 0) continue;
+          let pos = m * reticlePxPerMrad;
+          let tick = Number.isInteger(m) ? 5 : 2.5;
+          ctx.beginPath();
+          ctx.moveTo(cx + pos, cy - tick); ctx.lineTo(cx + pos, cy + tick);
+          ctx.moveTo(cx - tick, cy + pos); ctx.lineTo(cx + tick, cy + pos);
+          ctx.stroke();
+
+          // Holdover horizontal wind hashes below center
+          if (m >= 1 && Number.isInteger(m)) {
+            let maxWind = Math.min(m, 5);
+            for (let w = -maxWind; w <= maxWind; w++) {
+              if (w === 0) continue;
+              ctx.beginPath();
+              ctx.arc(cx + w * reticlePxPerMrad, cy + pos, 1.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
+      } else if (o.reticle === 'full_tree') {
+        // FFP Full Match Christmas Tree (0.2 MRAD hashes + dense grid)
+        for (let m = -12; m <= 12; m += 0.2) {
+          let mr = parseFloat(m.toFixed(1));
+          if (mr === 0) continue;
+          let pos = mr * reticlePxPerMrad;
+          let tick = Number.isInteger(mr) ? 6 : 2.5;
+          ctx.beginPath();
+          ctx.moveTo(cx + pos, cy - tick); ctx.lineTo(cx + pos, cy + tick);
+          ctx.moveTo(cx - tick, cy + pos); ctx.lineTo(cx + tick, cy + pos);
+          ctx.stroke();
+
+          if (mr >= 1 && Number.isInteger(mr)) {
+            let maxWind = Math.min(mr + 1, 7);
+            for (let w = -maxWind; w <= maxWind; w += 0.5) {
+              if (w === 0) continue;
+              ctx.beginPath();
+              ctx.arc(cx + w * reticlePxPerMrad, cy + pos, Number.isInteger(w) ? 1.8 : 1.0, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
+      }
+
+      // Outer Scope Tube Bezel
+      ctx.strokeStyle = '#090b0e';
+      ctx.lineWidth = 36;
+      ctx.beginPath();
+      ctx.arc(cx, cy, cx - 18, 0, Math.PI * 2);
+      ctx.stroke();
+
+      requestAnimationFrame(drawFrame);
+    }
+
+    // =========================================================================
+    // 8. INPUT HANDLERS & ARMORY STORE
+    // =========================================================================
+    function stepTurret(axis, delta) {
+      if (axis === 'elev') {
+        state.turretElev = Math.max(0, parseFloat((state.turretElev + delta).toFixed(1)));
+        document.getElementById('disp-elev').innerText = state.turretElev.toFixed(1);
+        document.getElementById('hud-elev').innerText = `${state.turretElev.toFixed(1)} MRAD`;
+      } else {
+        state.turretWind = parseFloat((state.turretWind + delta).toFixed(1));
+        const label = state.turretWind === 0 ? '0.0' : (state.turretWind > 0 ? `${state.turretWind.toFixed(1)} R` : `${Math.abs(state.turretWind).toFixed(1)} L`);
+        document.getElementById('disp-wind').innerText = label;
+        document.getElementById('hud-wind').innerText = `${label} MRAD`;
+      }
+    }
+
+    function stepZoom(dir) {
+      const { o } = getEquipped();
+      state.zoom = Math.min(o.maxZoom, Math.max(o.minZoom, state.zoom + dir * 2));
+      document.getElementById('hud-zoom').innerText = `${state.zoom.toFixed(1)}x`;
+      document.getElementById('disp-zoom-btn').innerText = `${state.zoom}x`;
+    }
+
+    function updateBag(val) {
+      state.bagElevMrad = parseFloat(val);
+      document.getElementById('disp-bag').innerText = `${state.bagElevMrad >= 0 ? '+' : ''}${state.bagElevMrad.toFixed(2)} MRAD`;
+    }
+
+    function setBreathHold(active) {
+      state.holdingBreath = active;
+      const btn = document.getElementById('btn-breath');
+      if (active) btn.classList.add('holding');
+      else btn.classList.remove('holding');
+    }
+
+    function changeRangeSetup() {
+      state.targetType = document.getElementById('sel-target-type').value;
+      state.distanceYd = parseFloat(document.getElementById('sel-distance').value);
+      state.impacts = [];
+      document.getElementById('hud-dist').innerText = `${state.distanceYd} YD`;
+      setFeedback(`TARGET SET: ${state.distanceYd} YARDS`, "#e2e8f0");
+    }
+
+    function rerollWind() {
+      state.baseWindMph = parseFloat((Math.random() * 14 + 2).toFixed(1));
+      state.baseWindClock = parseFloat((Math.floor(Math.random() * 12) + 1));
+      setFeedback("WIND CONDITIONS SHIFTED", "#4fd1c5");
+    }
+
+    function setFeedback(msg, color) {
+      const el = document.getElementById('hud-feedback');
+      el.innerText = msg;
+      el.style.color = color;
+    }
+
+    function updateTopUI() {
+      const { b, o, a } = getEquipped();
+      document.getElementById('ui-cash').innerText = `$${state.cash.toFixed(2)}`;
+      document.getElementById('ui-rifle-summary').innerText = `${b.name} | ${o.maxZoom}x ${o.ffp ? 'FFP' : 'SFP'}`;
+      document.getElementById('ui-ammo-cost').innerText = `-$${(b.roundCost * a.costMult).toFixed(2)}/rd`;
+      document.getElementById('hud-focal').innerText = o.ffp ? '(FFP)' : '(SFP)';
+
+      const kesBtn = document.getElementById('btn-kestrel');
+      if (state.eq.wind === 'wind_3') kesBtn.classList.remove('locked');
+      else kesBtn.classList.add('locked');
+    }
+
+    // Touch & Mouse drag on canvas for bipod pan & rear bag fine elevation
+    let dragging = false, lastDragX = 0, lastDragY = 0;
+    canvas.addEventListener('pointerdown', e => {
+      dragging = true;
+      lastDragX = e.clientX;
+      lastDragY = e.clientY;
+    });
+    window.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      const dx = e.clientX - lastDragX;
+      const dy = e.clientY - lastDragY;
+      lastDragX = e.clientX;
+      lastDragY = e.clientY;
+      const sens = 0.015 / (state.zoom / 10);
+      state.aimPanX = Math.max(-6, Math.min(6, state.aimPanX - dx * sens));
+      state.aimPanY = Math.max(-6, Math.min(6, state.aimPanY - dy * sens));
+    });
+    window.addEventListener('pointerup', () => dragging = false);
+
+    // Keyboard Controls
+    window.addEventListener('keydown', e => {
+      if (document.activeElement.tagName === 'INPUT') return;
+      if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') stepTurret('elev', +0.1);
+      if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') stepTurret('elev', -0.1);
+      if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') stepTurret('wind', +0.1);
+      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') stepTurret('wind', -0.1);
+      if (e.key === 'x' || e.key === 'X') stepZoom(+1);
+      if (e.key === 'z' || e.key === 'Z') stepZoom(-1);
+      if (e.key === 'b' || e.key === 'B') setBreathHold(true);
+      if (e.code === 'Space') { e.preventDefault(); fireRound(); }
+    });
+    window.addEventListener('keyup', e => {
+      if (e.key === 'b' || e.key === 'B') setBreathHold(false);
+    });
+
+    // Armory UI
+    function openArmory() {
+      document.getElementById('modal-armory').classList.add('open');
+      renderArmory();
+    }
+    function closeArmory() {
+      document.getElementById('modal-armory').classList.remove('open');
+    }
+
+    function renderArmory() {
+      const container = document.getElementById('armory-list');
+      container.innerHTML = '';
+
+      const sections = [
+        { title: 'Optics & Reticles', key: 'optic', items: OPTICS, fmt: x => x.desc },
+        { title: 'Wind Intel Gear', key: 'wind', items: WIND_GEAR, fmt: x => x.desc },
+        { title: 'Cases & Propellant', key: 'ammo', items: BRASS_POWDER, fmt: x => x.desc },
+        { title: 'Barrels & Actions', key: 'barrel', items: BARRELS, fmt: x => x.desc },
+        { title: 'Rifle Chassis', key: 'chassis', items: CHASSIS, fmt: x => x.desc },
+        { title: 'Precision Projectiles (19-Bullet Library)', key: 'bullet', items: BULLETS, fmt: x => `G7 BC: ${x.bc} | Base MV: ${x.mv} fps | Len: ${x.len}" | $${x.roundCost.toFixed(2)}/rd` }
+      ];
+
+      sections.forEach(sec => {
+        const h = document.createElement('div');
+        h.className = 'armory-cat';
+        h.innerText = sec.title;
+        container.appendChild(h);
+
+        sec.items.forEach(item => {
+          const row = document.createElement('div');
+          row.className = 'armory-item';
+          const isEq = state.eq[sec.key] === item.id;
+          const isUnl = state.unlocked.includes(item.id);
+
+          let btnHtml = '';
+          if (isEq) btnHtml = `<button class="btn-buy equipped">EQUIPPED</button>`;
+          else if (isUnl) btnHtml = `<button class="btn-buy" onclick="equipItem('${sec.key}', '${item.id}')">EQUIP</button>`;
+          else btnHtml = `<button class="btn-buy" onclick="buyItem('${sec.key}', '${item.id}', ${item.cost})">$${item.cost}</button>`;
+
+          row.innerHTML = `
+            <div>
+              <h4>${item.name}</h4>
+              <p>${sec.fmt(item)}</p>
+            </div>
+            <div>${btnHtml}</div>
+          `;
+          container.appendChild(row);
+        });
+      });
+    }
+
+    function buyItem(cat, id, cost) {
+      if (state.cash < cost) {
+        alert("Not enough funds! Hit more steel targets on the range.");
+        return;
+      }
+      state.cash -= cost;
+      state.unlocked.push(id);
+      equipItem(cat, id);
+    }
+
+    function equipItem(cat, id) {
+      state.eq[cat] = id;
+      if (cat === 'optic') {
+        const o = OPTICS.find(x => x.id === id);
+        state.zoom = Math.min(o.maxZoom, Math.max(o.minZoom, state.zoom));
+        document.getElementById('hud-zoom').innerText = `${state.zoom.toFixed(1)}x`;
+        document.getElementById('disp-zoom-btn').innerText = `${state.zoom}x`;
+      }
+      state.impacts = [];
+      updateTopUI();
+      renderArmory();
+    }
+
+    // Boot
+    updateTopUI();
+    requestAnimationFrame(drawFrame);
+  </script>
+</body>
+</html>
