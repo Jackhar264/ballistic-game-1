@@ -6,13 +6,13 @@
   <title>Precision Rifle Simulator</title>
   <style>
     :root {
-      --bg: #0f1215;
-      --panel: #181d23;
-      --panel-alt: #212830;
+      --bg: #0c0f12;
+      --panel: #161b21;
+      --panel-alt: #1f262f;
       --accent: #e5a93b;
       --text: #e2e8f0;
       --muted: #8b9bb4;
-      --border: #2e3744;
+      --border: #2c3542;
       --hit: #38a169;
       --miss: #e53e3e;
     }
@@ -24,35 +24,34 @@
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       align-items: center;
       min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    /* Top Header Bar */
-    .top-bar {
+    /* Main Horizontal / Landscape Shell */
+    .app-shell {
       width: 100%;
-      max-width: 520px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--panel);
-      padding: 8px 12px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      font-size: 0.85rem;
-      margin-bottom: 6px;
+      max-width: 1180px;
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: 10px;
+      align-items: stretch;
     }
-    .cash { color: var(--hit); font-weight: 800; font-size: 1rem; }
-    .ammo-cost { color: var(--accent); font-size: 0.78rem; }
 
-    /* Main Scope Viewport */
+    @media (max-width: 780px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Left Column: Wide Scope Viewport */
     .viewport-wrap {
       position: relative;
       width: 100%;
-      max-width: 520px;
-      aspect-ratio: 1 / 1;
-      background: #1c2229;
+      aspect-ratio: 4 / 3;
+      background: #14191f;
       border-radius: 10px;
       border: 2px solid var(--border);
       overflow: hidden;
@@ -64,24 +63,26 @@
       position: absolute;
       top: 10px;
       left: 10px;
-      background: rgba(15, 18, 21, 0.78);
+      background: rgba(12, 15, 18, 0.82);
       padding: 6px 10px;
       border-radius: 6px;
       border: 1px solid var(--border);
-      font-size: 0.75rem;
+      font-size: 0.76rem;
       pointer-events: none;
+      line-height: 1.35;
     }
     .hud-overlay-tr {
       position: absolute;
       top: 10px;
       right: 10px;
-      background: rgba(15, 18, 21, 0.78);
+      background: rgba(12, 15, 18, 0.82);
       padding: 6px 10px;
       border-radius: 6px;
       border: 1px solid var(--border);
-      font-size: 0.75rem;
+      font-size: 0.76rem;
       text-align: right;
       pointer-events: none;
+      line-height: 1.35;
     }
     .hud-overlay-bl {
       position: absolute;
@@ -94,8 +95,8 @@
       pointer-events: none;
     }
     .shot-feedback {
-      background: rgba(15, 18, 21, 0.88);
-      padding: 5px 10px;
+      background: rgba(12, 15, 18, 0.9);
+      padding: 6px 12px;
       border-radius: 6px;
       font-size: 0.8rem;
       font-weight: 700;
@@ -106,16 +107,17 @@
     .floating-win {
       display: none;
       position: absolute;
-      top: 46px;
-      left: 10px;
-      right: 10px;
-      background: rgba(24, 29, 35, 0.96);
+      top: 52px;
+      left: 12px;
+      width: 310px;
+      max-width: calc(100% - 24px);
+      background: rgba(22, 27, 33, 0.97);
       border: 1px solid var(--accent);
       border-radius: 8px;
       padding: 10px;
       z-index: 20;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.75);
-      font-size: 0.8rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.85);
+      font-size: 0.78rem;
     }
     .floating-win.open { display: block; }
     .win-header {
@@ -123,13 +125,13 @@
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid var(--border);
-      padding-bottom: 6px;
+      padding-bottom: 5px;
       margin-bottom: 8px;
       font-weight: 700;
       color: var(--accent);
     }
     .win-close {
-      background: #2e3744;
+      background: #2c3542;
       color: #fff;
       border: none;
       border-radius: 4px;
@@ -145,62 +147,79 @@
     }
     .solver-grid input {
       width: 100%;
-      background: #0f1215;
+      background: #0c0f12;
       border: 1px solid var(--border);
       color: #fff;
       padding: 5px;
       border-radius: 4px;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
     }
     .solver-out {
       display: flex;
       justify-content: space-around;
-      background: #0f1215;
-      padding: 8px;
+      background: #0c0f12;
+      padding: 7px;
       border-radius: 6px;
       border: 1px solid var(--border);
       font-weight: 700;
     }
 
-    /* Range Setup Bar */
+    /* Right Column: Tactical Control Deck */
+    .control-deck {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 7px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel-alt);
+      padding: 8px 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      font-size: 0.82rem;
+    }
+    .cash { color: var(--hit); font-weight: 800; font-size: 0.98rem; }
+    .ammo-cost { color: var(--accent); font-size: 0.76rem; font-weight: 600; }
+
     .range-bar {
-      width: 100%;
-      max-width: 520px;
       display: grid;
-      grid-template-columns: 1.2fr 1.2fr 0.8fr;
+      grid-template-columns: 1.25fr 1.15fr 0.75fr;
       gap: 6px;
-      margin: 6px 0;
     }
     select, button {
       font-family: inherit;
       border-radius: 6px;
       border: 1px solid var(--border);
-      background: var(--panel);
+      background: var(--panel-alt);
       color: var(--text);
-      padding: 8px;
-      font-size: 0.82rem;
+      padding: 7px 6px;
+      font-size: 0.78rem;
       font-weight: 600;
       cursor: pointer;
     }
     select:focus, button:focus { outline: none; border-color: var(--accent); }
 
-    /* Turrets, Zoom & Rear Bag Controls */
     .controls-grid {
-      width: 100%;
-      max-width: 520px;
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 6px;
-      margin-bottom: 6px;
     }
     .ctrl-box {
-      background: var(--panel);
+      background: var(--panel-alt);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 6px 8px;
       text-align: center;
     }
-    .ctrl-lbl { font-size: 0.68rem; text-transform: uppercase; color: var(--muted); letter-spacing: 0.04em; }
+    .ctrl-lbl { font-size: 0.65rem; text-transform: uppercase; color: var(--muted); letter-spacing: 0.04em; }
     .ctrl-row {
       display: flex;
       justify-content: space-between;
@@ -208,26 +227,22 @@
       margin-top: 4px;
     }
     .btn-mini {
-      background: var(--panel-alt);
-      padding: 6px 10px;
-      font-size: 0.9rem;
+      background: #2a333f;
+      padding: 5px 10px;
+      font-size: 0.88rem;
       font-weight: 700;
-      min-width: 36px;
+      min-width: 34px;
     }
     .btn-mini:active { background: var(--accent); color: #000; }
-    .readout { font-size: 1rem; font-weight: 700; color: var(--accent); }
+    .readout { font-size: 0.96rem; font-weight: 700; color: var(--accent); }
 
-    /* Rear Bag & Breath Bar */
     .support-bar {
-      width: 100%;
-      max-width: 520px;
       display: grid;
-      grid-template-columns: 1.4fr 1fr;
+      grid-template-columns: 1.35fr 1fr;
       gap: 6px;
-      margin-bottom: 6px;
     }
     .bag-box {
-      background: var(--panel);
+      background: var(--panel-alt);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 6px 10px;
@@ -245,29 +260,30 @@
       border-color: #2c7a7b;
       color: #e6fffa;
       font-weight: 700;
-      font-size: 0.82rem;
+      font-size: 0.76rem;
+      padding: 6px;
     }
     .btn-breath.holding { background: #319795; color: #000; }
 
-    /* Action Toolbar */
     .toolbar {
-      width: 100%;
-      max-width: 520px;
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr 1.6fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 6px;
     }
-    .btn-tool { background: var(--panel-alt); font-size: 0.78rem; padding: 10px 4px; }
+    .btn-tool { background: #262f3b; font-size: 0.76rem; padding: 9px 4px; }
     .btn-tool.locked { opacity: 0.45; cursor: not-allowed; }
+
     .btn-fire {
+      width: 100%;
       background: #c05621;
       border-color: #dd6b20;
       color: #fff;
-      font-size: 1rem;
+      font-size: 1.05rem;
       font-weight: 800;
-      letter-spacing: 0.05em;
+      padding: 12px;
+      letter-spacing: 0.06em;
     }
-    .btn-fire:active { background: #9c4221; transform: scale(0.98); }
+    .btn-fire:active { background: #9c4221; transform: scale(0.99); }
     .btn-fire:disabled { background: #4a5568; border-color: #4a5568; cursor: wait; }
 
     /* Armory Modal */
@@ -285,7 +301,7 @@
     .modal-content {
       background: var(--panel);
       width: 100%;
-      max-width: 500px;
+      max-width: 620px;
       max-height: 88vh;
       overflow-y: auto;
       border-radius: 10px;
@@ -293,7 +309,7 @@
       padding: 14px;
     }
     .armory-cat {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       text-transform: uppercase;
       color: var(--accent);
       margin: 14px 0 6px;
@@ -304,19 +320,19 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 8px 0;
+      padding: 7px 0;
       border-bottom: 1px solid #222933;
       gap: 8px;
     }
-    .armory-item h4 { margin: 0 0 2px; font-size: 0.88rem; }
-    .armory-item p { margin: 0; font-size: 0.74rem; color: var(--muted); }
+    .armory-item h4 { margin: 0 0 2px; font-size: 0.86rem; }
+    .armory-item p { margin: 0; font-size: 0.73rem; color: var(--muted); }
     .btn-buy {
       background: var(--accent);
       color: #000;
       border: none;
       padding: 6px 10px;
       font-weight: 700;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       white-space: nowrap;
     }
     .btn-buy.equipped { background: #2e3744; color: #a0aec0; cursor: default; }
@@ -324,147 +340,157 @@
 </head>
 <body>
 
-  <!-- Top Bar -->
-  <div class="top-bar">
-    <div>Bank: <span class="cash" id="ui-cash">$250.00</span></div>
-    <div id="ui-rifle-summary" style="font-weight:600; font-size:0.78rem;">.224 77gr SMK | 10x SFP</div>
-    <div class="ammo-cost" id="ui-ammo-cost">-$1.50/rd</div>
-  </div>
+  <div class="app-shell">
+    <!-- LEFT: SCOPE VIEWPORT -->
+    <div class="viewport-wrap">
+      <canvas id="scopeCanvas" width="760" height="570"></canvas>
 
-  <!-- Scope Viewport -->
-  <div class="viewport-wrap">
-    <canvas id="scopeCanvas" width="520" height="520"></canvas>
-
-    <div class="hud-overlay-tl">
-      <div>Dist: <b id="hud-dist" style="color:var(--accent);">500 YD</b></div>
-      <div>Zoom: <b id="hud-zoom">10.0x</b> <span id="hud-focal" style="color:var(--muted);">(SFP)</span></div>
-      <div>Azimuth: <b>90° E</b></div>
-    </div>
-
-    <div class="hud-overlay-tr">
-      <div>Elev: <b id="hud-elev" style="color:var(--accent);">0.0 MRAD</b></div>
-      <div>Wind: <b id="hud-wind" style="color:var(--accent);">0.0 MRAD</b></div>
-      <div id="hud-lung-wrap" style="color:#4fd1c5; margin-top:2px;">O₂: <b id="hud-o2">100%</b></div>
-    </div>
-
-    <div class="hud-overlay-bl">
-      <div class="shot-feedback" id="hud-feedback">RANGE HOT — DIAL & FIRE</div>
-    </div>
-
-    <!-- Collapsible Ballistic Solver Window -->
-    <div class="floating-win" id="win-solver">
-      <div class="win-header">
-        <span>G7 RK4 BALLISTIC SOLVER</span>
-        <button class="win-close" onclick="toggleWin('win-solver')">X</button>
+      <div class="hud-overlay-tl">
+        <div>Dist: <b id="hud-dist" style="color:var(--accent);">500 YD</b></div>
+        <div>Zoom: <b id="hud-zoom">10.0x</b> <span id="hud-focal" style="color:var(--muted);">(SFP)</span></div>
+        <div>Azimuth: <b>90° E</b></div>
       </div>
-      <div class="solver-grid">
-        <div>
-          <label style="font-size:0.68rem; color:var(--muted);">Range (yd)</label>
-          <input type="number" id="sol-range" value="500" oninput="runPopSolver()">
+
+      <div class="hud-overlay-tr">
+        <div>Elev: <b id="hud-elev" style="color:var(--accent);">0.0 MRAD</b></div>
+        <div>Wind: <b id="hud-wind" style="color:var(--accent);">0.0 MRAD</b></div>
+        <div style="color:#4fd1c5;">O₂: <b id="hud-o2">100%</b></div>
+      </div>
+
+      <div class="hud-overlay-bl">
+        <div class="shot-feedback" id="hud-feedback">RANGE HOT — DIAL & FIRE</div>
+      </div>
+
+      <!-- Collapsible Ballistic Solver Window -->
+      <div class="floating-win" id="win-solver">
+        <div class="win-header">
+          <span>G7 RK4 BALLISTIC SOLVER</span>
+          <button class="win-close" onclick="toggleWin('win-solver')">X</button>
         </div>
-        <div>
-          <label style="font-size:0.68rem; color:var(--muted);">Wind (mph)</label>
-          <input type="number" id="sol-wind" value="8" oninput="runPopSolver()">
+        <div class="solver-grid">
+          <div>
+            <label style="font-size:0.66rem; color:var(--muted);">Range (yd)</label>
+            <input type="number" id="sol-range" value="500" oninput="runPopSolver()">
+          </div>
+          <div>
+            <label style="font-size:0.66rem; color:var(--muted);">Wind (mph)</label>
+            <input type="number" id="sol-wind" value="8" oninput="runPopSolver()">
+          </div>
+          <div>
+            <label style="font-size:0.66rem; color:var(--muted);">Clock (1-12)</label>
+            <input type="number" id="sol-clock" value="3" step="0.5" oninput="runPopSolver()">
+          </div>
         </div>
-        <div>
-          <label style="font-size:0.68rem; color:var(--muted);">Clock (1-12)</label>
-          <input type="number" id="sol-clock" value="3" step="0.5" oninput="runPopSolver()">
+        <div class="solver-out">
+          <span>ELEV: <b id="sol-out-elev" style="color:var(--accent);">0.00 MRAD</b></span>
+          <span>WIND: <b id="sol-out-wind" style="color:var(--accent);">0.00 MRAD</b></span>
+          <span>TOF: <b id="sol-out-tof">0.00s</b></span>
         </div>
       </div>
-      <div class="solver-out">
-        <span>ELEV: <b id="sol-out-elev" style="color:var(--accent);">0.00 MRAD</b></span>
-        <span>WIND: <b id="sol-out-wind" style="color:var(--accent);">0.00 MRAD</b></span>
-        <span>TOF: <b id="sol-out-tof">0.00s</b></span>
+
+      <!-- Collapsible Kestrel Weather Station Window -->
+      <div class="floating-win" id="win-kestrel">
+        <div class="win-header">
+          <span>KESTREL 5700 BALLISTICS</span>
+          <button class="win-close" onclick="toggleWin('win-kestrel')">X</button>
+        </div>
+        <div class="solver-out" style="margin-bottom:6px;">
+          <span>WIND: <b id="kes-spd" style="color:#4fd1c5;">0.0 MPH</b></span>
+          <span>FROM: <b id="kes-dir" style="color:#4fd1c5;">3:00</b></span>
+        </div>
+        <div class="solver-out" style="font-size:0.74rem; color:var(--muted);">
+          <span>TEMP: <b id="kes-temp" style="color:#fff;">64°F</b></span>
+          <span>PRESS: <b id="kes-press" style="color:#fff;">29.92 inHg</b></span>
+          <span>LAT: <b style="color:#fff;">35.8°N</b></span>
+        </div>
       </div>
     </div>
 
-    <!-- Collapsible Kestrel Weather Station Window -->
-    <div class="floating-win" id="win-kestrel">
-      <div class="win-header">
-        <span>KESTREL 5700 BALLISTICS</span>
-        <button class="win-close" onclick="toggleWin('win-kestrel')">X</button>
+    <!-- RIGHT: TACTICAL CONTROL DECK -->
+    <div class="control-deck">
+      <div class="top-bar">
+        <div>Bank: <span class="cash" id="ui-cash">$250.00</span></div>
+        <div id="ui-rifle-summary" style="font-weight:600; font-size:0.75rem;">.224 77gr SMK | 10x SFP</div>
+        <div class="ammo-cost" id="ui-ammo-cost">-$1.50/rd</div>
       </div>
-      <div class="solver-out" style="margin-bottom:6px;">
-        <span>WIND: <b id="kes-spd" style="color:#4fd1c5;">0.0 MPH</b></span>
-        <span>DIR: <b id="kes-dir" style="color:#4fd1c5;">3:00 (90°)</b></span>
-      </div>
-      <div class="solver-out" style="font-size:0.75rem; color:var(--muted);">
-        <span>TEMP: <b id="kes-temp" style="color:#fff;">64°F</b></span>
-        <span>PRESS: <b id="kes-press" style="color:#fff;">29.92 inHg</b></span>
-        <span>LAT: <b style="color:#fff;">35.8°N</b></span>
-      </div>
-    </div>
-  </div>
 
-  <!-- Range Target & Distance Controls -->
-  <div class="range-bar">
-    <select id="sel-target-type" onchange="changeRangeSetup()">
-      <option value="ipsc_full">Full IPSC (1.0x Pay)</option>
-      <option value="ipsc_23">2/3 IPSC (1.5x Pay)</option>
-      <option value="gong_15moa">1.5 MOA Gong (2.5x Pay)</option>
-    </select>
-    <select id="sel-distance" onchange="changeRangeSetup()">
-      <option value="300">300 Yards</option>
-      <option value="400">400 Yards</option>
-      <option value="500" selected>500 Yards</option>
-      <option value="650">650 Yards</option>
-      <option value="800">800 Yards</option>
-      <option value="900">900 Yards</option>
-      <option value="1000">1,000 Yards</option>
-      <option value="1200">1,200 Yards</option>
-    </select>
-    <button onclick="rerollWind()">New Wind</button>
-  </div>
+      <!-- Target & Distance Selector -->
+      <div class="range-bar">
+        <select id="sel-target-type" onchange="changeRangeSetup()">
+          <option value="ipsc_full">Full IPSC (1.0x Pay)</option>
+          <option value="ipsc_23">2/3 IPSC (1.6x Pay)</option>
+          <option value="gong_15moa">1.5 MOA Gong (3.0x Pay)</option>
+          <option value="gong_10moa">1.0 MOA Gong (5.0x Pay)</option>
+        </select>
+        <select id="sel-distance" onchange="changeRangeSetup()">
+          <option value="300">300 Yards</option>
+          <option value="400">400 Yards</option>
+          <option value="500" selected>500 Yards</option>
+          <option value="650">650 Yards</option>
+          <option value="800">800 Yards</option>
+          <option value="900">900 Yards</option>
+          <option value="1000">1,000 Yards</option>
+          <option value="1200">1,200 Yards</option>
+          <option value="1500">1,500 Yards</option>
+          <option value="1760">1 Mile (1,760 yd)</option>
+          <option value="2000">2,000 Yards</option>
+        </select>
+        <button onclick="rerollWind()">New Wind</button>
+      </div>
 
-  <!-- Turrets & Magnification -->
-  <div class="controls-grid">
-    <div class="ctrl-box">
-      <div class="ctrl-lbl">Elevation Turret (0.1 MRAD) [W/S]</div>
-      <div class="ctrl-row">
-        <button class="btn-mini" onclick="stepTurret('elev', -0.1)">-</button>
-        <span class="readout" id="disp-elev">0.0</span>
-        <button class="btn-mini" onclick="stepTurret('elev', +0.1)">+</button>
+      <!-- Turrets -->
+      <div class="controls-grid">
+        <div class="ctrl-box">
+          <div class="ctrl-lbl">Elevation (0.1 MRAD) [W/S]</div>
+          <div class="ctrl-row">
+            <button class="btn-mini" onclick="stepTurret('elev', -0.1)">-</button>
+            <span class="readout" id="disp-elev">0.0</span>
+            <button class="btn-mini" onclick="stepTurret('elev', +0.1)">+</button>
+          </div>
+        </div>
+        <div class="ctrl-box">
+          <div class="ctrl-lbl">Windage (0.1 MRAD) [A/D]</div>
+          <div class="ctrl-row">
+            <button class="btn-mini" onclick="stepTurret('wind', -0.1)">L</button>
+            <span class="readout" id="disp-wind">0.0</span>
+            <button class="btn-mini" onclick="stepTurret('wind', +0.1)">R</button>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="ctrl-box">
-      <div class="ctrl-lbl">Windage Turret (0.1 MRAD) [A/D]</div>
-      <div class="ctrl-row">
-        <button class="btn-mini" onclick="stepTurret('wind', -0.1)">L</button>
-        <span class="readout" id="disp-wind">0.0</span>
-        <button class="btn-mini" onclick="stepTurret('wind', +0.1)">R</button>
-      </div>
-    </div>
-  </div>
 
-  <!-- Rear Bag Squeeze, Zoom & Breath Hold -->
-  <div class="support-bar">
-    <div class="bag-box">
-      <div style="display:flex; justify-content:space-between; font-size:0.68rem; color:var(--muted);">
-        <span>L-HAND REAR BAG (VERT)</span>
-        <span id="disp-bag" style="color:var(--accent);">0.00 MRAD</span>
+      <!-- Rear Bag Squeeze, Zoom & Breath Hold -->
+      <div class="support-bar">
+        <div class="bag-box">
+          <div style="display:flex; justify-content:space-between; font-size:0.65rem; color:var(--muted);">
+            <span>L-HAND REAR BAG (VERT)</span>
+            <span id="disp-bag" style="color:var(--accent);">0.00 MRAD</span>
+          </div>
+          <input type="range" id="bag-slider" min="-2.5" max="2.5" step="0.05" value="0" oninput="updateBag(this.value)">
+        </div>
+        <div class="ctrl-box" style="display:flex; flex-direction:column; justify-content:space-between; gap:4px;">
+          <div class="ctrl-row" style="margin-top:0;">
+            <button class="btn-mini" style="padding:3px 8px;" onclick="stepZoom(-1)">-Z</button>
+            <span style="font-size:0.75rem; font-weight:700;" id="disp-zoom-btn">10x</span>
+            <button class="btn-mini" style="padding:3px 8px;" onclick="stepZoom(+1)">+Z</button>
+          </div>
+          <button class="btn-breath" id="btn-breath"
+            onmousedown="setBreathHold(true)" onmouseup="setBreathHold(false)" onmouseleave="setBreathHold(false)"
+            ontouchstart="setBreathHold(true); event.preventDefault();" ontouchend="setBreathHold(false)">
+            HOLD BREATH [B]
+          </button>
+        </div>
       </div>
-      <input type="range" id="bag-slider" min="-2.5" max="2.5" step="0.05" value="0" oninput="updateBag(this.value)">
-    </div>
-    <div class="ctrl-box" style="display:flex; flex-direction:column; justify-content:space-between;">
-      <div class="ctrl-row" style="margin-top:0;">
-        <button class="btn-mini" style="padding:4px 8px;" onclick="stepZoom(-1)">-Z</button>
-        <span style="font-size:0.75rem; font-weight:700;" id="disp-zoom-btn">10x</span>
-        <button class="btn-mini" style="padding:4px 8px;" onclick="stepZoom(+1)">+Z</button>
-      </div>
-      <button class="btn-breath" id="btn-breath"
-        onmousedown="setBreathHold(true)" onmouseup="setBreathHold(false)" onmouseleave="setBreathHold(false)"
-        ontouchstart="setBreathHold(true); event.preventDefault();" ontouchend="setBreathHold(false)">
-        HOLD BREATH [B]
-      </button>
-    </div>
-  </div>
 
-  <!-- Bottom Action Toolbar -->
-  <div class="toolbar">
-    <button class="btn-tool" onclick="toggleWin('win-solver')">SOLVER</button>
-    <button class="btn-tool locked" id="btn-kestrel" onclick="openKestrel()">KESTREL</button>
-    <button class="btn-tool" onclick="openArmory()">ARMORY</button>
-    <button class="btn-fire" id="btn-fire" onclick="fireRound()">FIRE [SPACE]</button>
+      <!-- Utility Tools -->
+      <div class="toolbar">
+        <button class="btn-tool" onclick="toggleWin('win-solver')">SOLVER</button>
+        <button class="btn-tool locked" id="btn-kestrel" onclick="openKestrel()">KESTREL</button>
+        <button class="btn-tool" onclick="openArmory()">ARMORY</button>
+      </div>
+
+      <!-- Primary Trigger -->
+      <button class="btn-fire" id="btn-fire" onclick="fireRound()">FIRE [SPACE]</button>
+    </div>
   </div>
 
   <!-- Armory Modal -->
@@ -528,37 +554,54 @@
     }
 
     // =========================================================================
-    // 2. COMPLETE 19-BULLET LIBRARY & EQUIPMENT CATALOG
+    // 2. COMPLETE 25-BULLET LIBRARY & EQUIPMENT CATALOG
     // =========================================================================
     const BULLETS = [
+      // .224
       { id: 'sierra_224_77', name: '.224 Sierra 77gr SMK', cost: 0, roundCost: 1.50, bc: 0.190, mv: 2750, dia: 0.224, wt: 77.0, len: 0.990, twist: 8.0 },
       { id: 'hornady_224_75', name: '.224 Hornady 75gr ELD-M', cost: 120, roundCost: 1.60, bc: 0.212, mv: 2810, dia: 0.224, wt: 75.0, len: 1.110, twist: 8.0 },
       { id: 'berger_224_805', name: '.224 Berger 80.5gr Fullbore', cost: 220, roundCost: 1.85, bc: 0.226, mv: 2780, dia: 0.224, wt: 80.5, len: 1.095, twist: 7.5 },
       { id: 'hornady_224_88', name: '.224 Hornady 88gr ELD-M', cost: 320, roundCost: 1.95, bc: 0.274, mv: 2680, dia: 0.224, wt: 88.0, len: 1.240, twist: 7.0 },
 
-      { id: 'hornady_243_105', name: '.243 Hornady 105gr BTHP', cost: 450, roundCost: 2.10, bc: 0.265, mv: 2980, dia: 0.243, wt: 105.0, len: 1.230, twist: 8.0 },
-      { id: 'sierra_243_107', name: '.243 Sierra 107gr SMK', cost: 550, roundCost: 2.25, bc: 0.262, mv: 2960, dia: 0.243, wt: 107.0, len: 1.230, twist: 8.0 },
-      { id: 'hornady_243_108', name: '.243 Hornady 108gr ELD-M', cost: 650, roundCost: 2.30, bc: 0.275, mv: 2950, dia: 0.243, wt: 108.0, len: 1.265, twist: 7.5 },
-      { id: 'hornady_243_109', name: '.243 Hornady 109gr ELD-M', cost: 780, roundCost: 2.45, bc: 0.295, mv: 2930, dia: 0.243, wt: 109.0, len: 1.315, twist: 7.5 },
-      { id: 'berger_243_120', name: '.243 Berger 120gr LR Hybrid', cost: 950, roundCost: 2.75, bc: 0.328, mv: 2860, dia: 0.243, wt: 120.0, len: 1.383, twist: 7.0 },
+      // .243 (6mm)
+      { id: 'hornady_243_105', name: '.243 Hornady 105gr BTHP', cost: 420, roundCost: 2.10, bc: 0.265, mv: 2980, dia: 0.243, wt: 105.0, len: 1.230, twist: 8.0 },
+      { id: 'sierra_243_107', name: '.243 Sierra 107gr SMK', cost: 500, roundCost: 2.25, bc: 0.262, mv: 2960, dia: 0.243, wt: 107.0, len: 1.230, twist: 8.0 },
+      { id: 'hornady_243_108', name: '.243 Hornady 108gr ELD-M', cost: 600, roundCost: 2.30, bc: 0.275, mv: 2950, dia: 0.243, wt: 108.0, len: 1.265, twist: 7.5 },
+      { id: 'hornady_243_109', name: '.243 Hornady 109gr ELD-M', cost: 720, roundCost: 2.45, bc: 0.295, mv: 2930, dia: 0.243, wt: 109.0, len: 1.315, twist: 7.5 },
+      { id: 'berger_243_120', name: '.243 Berger 120gr LR Hybrid', cost: 880, roundCost: 2.75, bc: 0.328, mv: 2860, dia: 0.243, wt: 120.0, len: 1.383, twist: 7.0 },
 
-      { id: 'hornady_257_134', name: '.257 Hornady 134gr ELD-M', cost: 1150, roundCost: 2.90, bc: 0.325, mv: 2880, dia: 0.257, wt: 134.0, len: 1.410, twist: 7.5 },
-      { id: 'berger_257_135', name: '.257 Berger 135gr LR Hybrid', cost: 1350, roundCost: 3.10, bc: 0.334, mv: 2870, dia: 0.257, wt: 135.0, len: 1.416, twist: 7.5 },
+      // .257 (25 Cal)
+      { id: 'hornady_257_134', name: '.257 Hornady 134gr ELD-M', cost: 1020, roundCost: 2.90, bc: 0.325, mv: 2880, dia: 0.257, wt: 134.0, len: 1.410, twist: 7.5 },
+      { id: 'berger_257_135', name: '.257 Berger 135gr LR Hybrid', cost: 1180, roundCost: 3.10, bc: 0.334, mv: 2870, dia: 0.257, wt: 135.0, len: 1.416, twist: 7.5 },
 
-      { id: 'hornady_264_140', name: '.264 Hornady 140gr ELD-M', cost: 1500, roundCost: 3.00, bc: 0.315, mv: 2820, dia: 0.264, wt: 140.0, len: 1.380, twist: 8.0 },
-      { id: 'berger_264_140', name: '.264 Berger 140gr Hybrid', cost: 1650, roundCost: 3.25, bc: 0.311, mv: 2820, dia: 0.264, wt: 140.0, len: 1.405, twist: 8.0 },
-      { id: 'berger_264_144', name: '.264 Berger 144gr LR Hybrid', cost: 1850, roundCost: 3.40, bc: 0.336, mv: 2800, dia: 0.264, wt: 144.0, len: 1.415, twist: 8.0 },
-      { id: 'barnes_264_145', name: '.264 Barnes 145gr Match Burner', cost: 1950, roundCost: 3.30, bc: 0.341, mv: 2790, dia: 0.264, wt: 145.0, len: 1.466, twist: 7.5 },
-      { id: 'hornady_264_147', name: '.264 Hornady 147gr ELD-M', cost: 2100, roundCost: 3.35, bc: 0.335, mv: 2780, dia: 0.264, wt: 147.0, len: 1.440, twist: 7.5 },
-      { id: 'sierra_264_150', name: '.264 Sierra 150gr SMK', cost: 2300, roundCost: 3.60, bc: 0.356, mv: 2760, dia: 0.264, wt: 150.0, len: 1.510, twist: 7.5 },
-      { id: 'hornady_264_153', name: '.264 Hornady 153gr A-Tip', cost: 2600, roundCost: 4.20, bc: 0.354, mv: 2750, dia: 0.264, wt: 153.0, len: 1.505, twist: 7.5 },
-      { id: 'berger_264_1535', name: '.264 Berger 153.5gr LR Hybrid', cost: 2900, roundCost: 3.90, bc: 0.356, mv: 2765, dia: 0.264, wt: 153.5, len: 1.465, twist: 7.5 }
+      // .264 (6.5mm — tuned to ~2700 fps & high 2600s for 150gr+)
+      { id: 'hornady_264_140', name: '.264 Hornady 140gr ELD-M', cost: 1320, roundCost: 3.00, bc: 0.315, mv: 2715, dia: 0.264, wt: 140.0, len: 1.380, twist: 8.0 },
+      { id: 'berger_264_140', name: '.264 Berger 140gr Hybrid', cost: 1450, roundCost: 3.25, bc: 0.311, mv: 2720, dia: 0.264, wt: 140.0, len: 1.405, twist: 8.0 },
+      { id: 'berger_264_144', name: '.264 Berger 144gr LR Hybrid', cost: 1600, roundCost: 3.40, bc: 0.336, mv: 2705, dia: 0.264, wt: 144.0, len: 1.415, twist: 8.0 },
+      { id: 'barnes_264_145', name: '.264 Barnes 145gr Match Burner', cost: 1700, roundCost: 3.30, bc: 0.341, mv: 2695, dia: 0.264, wt: 145.0, len: 1.466, twist: 7.5 },
+      { id: 'hornady_264_147', name: '.264 Hornady 147gr ELD-M', cost: 1850, roundCost: 3.35, bc: 0.335, mv: 2690, dia: 0.264, wt: 147.0, len: 1.440, twist: 7.5 },
+      { id: 'sierra_264_150', name: '.264 Sierra 150gr SMK', cost: 2000, roundCost: 3.60, bc: 0.356, mv: 2675, dia: 0.264, wt: 150.0, len: 1.510, twist: 7.5 },
+      { id: 'hornady_264_153', name: '.264 Hornady 153gr A-Tip', cost: 2250, roundCost: 4.20, bc: 0.354, mv: 2660, dia: 0.264, wt: 153.0, len: 1.505, twist: 7.5 },
+      { id: 'berger_264_1535', name: '.264 Berger 153.5gr LR Hybrid', cost: 2450, roundCost: 3.90, bc: 0.356, mv: 2665, dia: 0.264, wt: 153.5, len: 1.465, twist: 7.5 },
+
+      // .284 (7mm)
+      { id: 'sierra_284_197', name: '7mm Sierra 197gr SMK', cost: 2750, roundCost: 4.10, bc: 0.385, mv: 2790, dia: 0.284, wt: 197.0, len: 1.650, twist: 8.0 },
+      { id: 'berger_284_195', name: '7mm Berger 195gr EOL Hybrid', cost: 2950, roundCost: 4.30, bc: 0.387, mv: 2815, dia: 0.284, wt: 195.0, len: 1.655, twist: 8.0 },
+
+      // .308 (30 Cal)
+      { id: 'berger_308_185', name: '.308 Berger 185gr Juggernaut', cost: 1100, roundCost: 2.85, bc: 0.283, mv: 2620, dia: 0.308, wt: 185.0, len: 1.355, twist: 10.0 },
+      { id: 'berger_308_200', name: '.308 Berger 200.20x Hybrid', cost: 1550, roundCost: 3.30, bc: 0.328, mv: 2590, dia: 0.308, wt: 200.0, len: 1.510, twist: 10.0 },
+      { id: 'berger_308_245', name: '.308 Berger 245gr LR Hybrid', cost: 3300, roundCost: 4.80, bc: 0.433, mv: 2710, dia: 0.308, wt: 245.0, len: 1.775, twist: 8.5 },
+
+      // .375 ELR
+      { id: 'berger_375_407', name: '.375 Berger 407gr ELR Solid', cost: 4800, roundCost: 7.50, bc: 0.523, mv: 2650, dia: 0.375, wt: 407.0, len: 2.350, twist: 7.5 }
     ];
 
     const OPTICS = [
       { id: 'opt_1', name: '3-10x42 SFP Mil-Dot', cost: 0, minZoom: 3, maxZoom: 10, ffp: false, reticle: 'mildot', desc: 'Second Focal Plane (Mil-dots true ONLY at 10x).' },
       { id: 'opt_2', name: '5-15x50 FFP Simple Tree', cost: 850, minZoom: 5, maxZoom: 15, ffp: true, reticle: 'simple_tree', desc: 'First Focal Plane with 0.5 MRAD stadia & holdover tree.' },
-      { id: 'opt_3', name: '5-25x56 FFP Full Christmas Tree', cost: 2200, minZoom: 5, maxZoom: 25, ffp: true, reticle: 'full_tree', desc: 'First Focal Plane 0.2 MRAD grid reticle with wind dots.' }
+      { id: 'opt_3', name: '5-25x56 FFP Full Christmas Tree', cost: 2200, minZoom: 5, maxZoom: 25, ffp: true, reticle: 'full_tree', desc: 'First Focal Plane 0.2 MRAD grid reticle with wind dots.' },
+      { id: 'opt_4', name: '6-36x56 FFP Extreme ELR Tree', cost: 3800, minZoom: 6, maxZoom: 36, ffp: true, reticle: 'elr_tree', desc: 'High-magnification 36x FFP ELR reticle with extended 16 MRAD tree.' }
     ];
 
     const WIND_GEAR = [
@@ -626,21 +669,20 @@
       swayX: 0,
       swayY: 0,
 
-      impacts: [], // { xMrad, yMrad, isHit }
-      dustPlumes: [], // { xMrad, yMrad, alpha, radius }
+      impacts: [],
+      dustPlumes: [],
       inFlight: false
     };
 
-    // Procedural terrain & foliage seed
-    const TERRAIN_BUSHES = Array.from({ length: 28 }, () => ({
-      xNorm: (Math.random() - 0.5) * 2.2,
+    const TERRAIN_BUSHES = Array.from({ length: 34 }, () => ({
+      xNorm: (Math.random() - 0.5) * 2.5,
       yNorm: Math.random(),
       size: 0.5 + Math.random() * 1.1,
       shade: Math.random()
     }));
 
     // =========================================================================
-    // 4. 3D RK4 + SPIN DRIFT + CORIOLIS BALLISTIC SOLVER
+    // 4. 3D RK4 + SPIN DRIFT + CORIOLIS + TRANSONIC INSTABILITY SOLVER
     // =========================================================================
     function solveBallistics(params) {
       const {
@@ -693,7 +735,7 @@
       }
 
       let theta = Math.atan(sightH_m / zero_m);
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 6; i++) {
         let err = zeroRK4(theta);
         if (Math.abs(err) < 0.00001) break;
         theta -= err / zero_m;
@@ -703,6 +745,7 @@
       let t = 0, x = 0, y = -sightH_m, z = 0;
       let vx = v0 * Math.cos(theta), vy = v0 * Math.sin(theta), vz = 0;
       let px, py, pz, pt;
+      let transonicTime = 0; // Accumulate time spent inside Mach 1.25 -> 0.85 shockwave zone
 
       while (x < target_m) {
         px = x; py = y; pz = z; pt = t;
@@ -716,12 +759,19 @@
         vy += (dt / 6) * (k1y + 2 * k2y + 2 * k3y + k4y);
         vz += (dt / 6) * (k1z + 2 * k2z + 2 * k3z + k4z);
         t += dt;
+
+        const curSpeed = Math.sqrt(vx * vx + vy * vy + vz * vz);
+        const curMach = curSpeed / speedSound;
+        if (curMach <= 1.25 && curMach >= 0.85) {
+          transonicTime += dt;
+        }
       }
 
       const frac = (x !== px) ? (target_m - px) / (x - px) : 1.0;
       const yFinal = py + frac * (y - py);
       const zFinal = pz + frac * (z - pz);
       const tFinal = pt + frac * (t - pt);
+      const finalMach = Math.sqrt(vx * vx + vy * vy + vz * vz) / speedSound;
 
       const tRatio = twistIn / diaIn;
       const lRatio = lenIn / diaIn;
@@ -742,7 +792,10 @@
       return {
         elevMrad: Math.atan2(-totalY_m, target_m) * 1000.0,
         windMrad: Math.atan2(-totalZ_m, target_m) * 1000.0,
-        tof: tFinal
+        tof: tFinal,
+        finalMach: finalMach,
+        transonicTime: transonicTime,
+        sg: sg
       };
     }
 
@@ -810,7 +863,7 @@
     }
 
     // =========================================================================
-    // 6. FIRING LOGIC, STOCHASTIC DISPERSION & HIT DETECTION
+    // 6. FIRING LOGIC, TRANSONIC UNPREDICTABILITY & HIT DETECTION
     // =========================================================================
     function fireRound() {
       if (state.inFlight) return;
@@ -847,10 +900,21 @@
         azDeg: state.azimuthDeg
       });
 
+      // Mechanical dispersion cone (MOA -> MRAD)
       const effectiveMoa = Math.max(0.15, brl.groupMoa + chs.groupBonus);
-      const dispStdMrad = (effectiveMoa * 0.290888) / 2.5;
-      const dispX = gaussianRandom(0, dispStdMrad);
-      const dispY = gaussianRandom(0, dispStdMrad);
+      let dispStdMrad = (effectiveMoa * 0.290888) / 2.5;
+
+      // Transonic instability multiplier (shockwave buffeting between Mach 1.25 and 0.85)
+      // Lower Sg projectiles suffer worse transonic yaw
+      let transonicPenaltyMrad = 0;
+      if (trueSol.transonicTime > 0) {
+        const stabilityFactor = Math.max(0.6, Math.min(2.0, trueSol.sg));
+        transonicPenaltyMrad = (trueSol.transonicTime * 0.42) / stabilityFactor;
+      }
+
+      const totalStdMrad = dispStdMrad + transonicPenaltyMrad;
+      const dispX = gaussianRandom(0, totalStdMrad);
+      const dispY = gaussianRandom(0, totalStdMrad * 1.15); // Slightly higher vertical dispersion in transonic
 
       const totalAimElevMrad = state.turretElev + state.bagElevMrad + state.aimPanY - state.swayY;
       const totalAimWindMrad = state.turretWind + state.aimPanX + state.swayX;
@@ -858,8 +922,8 @@
       const impactX_Mrad = (totalAimWindMrad - trueSol.windMrad) + dispX;
       const impactY_Mrad = (totalAimElevMrad - trueSol.elevMrad) + dispY;
 
-      state.recoilY = 2.4 * chs.recoilMult * (b.wt / 100);
-      state.recoilX = gaussianRandom(0, 0.45 * chs.recoilMult);
+      state.recoilY = 2.6 * chs.recoilMult * (b.wt / 100);
+      state.recoilX = gaussianRandom(0, 0.5 * chs.recoilMult);
 
       setTimeout(() => {
         state.inFlight = false;
@@ -873,26 +937,34 @@
         state.impacts.push({ xMrad: impactX_Mrad, yMrad: impactY_Mrad, isHit });
         if (state.impacts.length > 16) state.impacts.shift();
 
-        // Spawn dynamic berm dust cloud on miss
         if (!isHit) {
           state.dustPlumes.push({
             xMrad: impactX_Mrad,
             yMrad: impactY_Mrad,
-            alpha: 0.85,
-            radius: 0.25
+            alpha: 0.88,
+            radius: 0.26
           });
         }
 
+        const machNote = trueSol.finalMach < 1.15 ? ` [Mach ${trueSol.finalMach.toFixed(2)} Transonic]` : '';
+
         if (isHit) {
-          const mult = state.targetType === 'gong_15moa' ? 2.5 : (state.targetType === 'ipsc_23' ? 1.5 : 1.0);
-          const payout = parseFloat(((state.distanceYd * 0.08) * mult).toFixed(2));
+          // Steep target size multipliers, half base payout
+          const multMap = {
+            'ipsc_full': 1.0,
+            'ipsc_23': 1.6,
+            'gong_15moa': 3.0,
+            'gong_10moa': 5.0
+          };
+          const mult = multMap[state.targetType] || 1.0;
+          const payout = parseFloat(((state.distanceYd * 0.04) * mult).toFixed(2));
           state.cash += payout;
           updateTopUI();
-          setFeedback(`STEEL IMPACT! +$${payout.toFixed(2)} (${hitXIn >= 0 ? '+' : ''}${hitXIn.toFixed(1)}" H, ${hitYIn >= 0 ? '+' : ''}${hitYIn.toFixed(1)}" V)`, "#38a169");
+          setFeedback(`IMPACT! +$${payout.toFixed(2)} (${hitXIn >= 0 ? '+' : ''}${hitXIn.toFixed(1)}" H, ${hitYIn >= 0 ? '+' : ''}${hitYIn.toFixed(1)}" V)${machNote}`, "#38a169");
         } else {
-          setFeedback(`MISS! Splash: ${hitXIn >= 0 ? '+' : ''}${hitXIn.toFixed(1)}" R/L, ${hitYIn >= 0 ? '+' : ''}${hitYIn.toFixed(1)}" U/D`, "#e53e3e");
+          setFeedback(`MISS! Splash: ${hitXIn >= 0 ? '+' : ''}${hitXIn.toFixed(1)}" R/L, ${hitYIn >= 0 ? '+' : ''}${hitYIn.toFixed(1)}" U/D${machNote}`, "#e53e3e");
         }
-      }, Math.min(trueSol.tof * 850, 2200));
+      }, Math.min(trueSol.tof * 850, 2400));
     }
 
     function checkTargetHit(xIn, yIn) {
@@ -900,14 +972,18 @@
         return Math.abs(xIn) <= 9.0 && Math.abs(yIn) <= 15.0;
       } else if (state.targetType === 'ipsc_23') {
         return Math.abs(xIn) <= 6.0 && Math.abs(yIn) <= 10.0;
-      } else {
+      } else if (state.targetType === 'gong_15moa') {
         const radiusIn = (1.5 * 1.047 * (state.distanceYd / 100)) / 2;
+        return Math.sqrt(xIn * xIn + yIn * yIn) <= radiusIn;
+      } else {
+        // 1.0 MOA round plate
+        const radiusIn = (1.0 * 1.047 * (state.distanceYd / 100)) / 2;
         return Math.sqrt(xIn * xIn + yIn * yIn) <= radiusIn;
       }
     }
 
     // =========================================================================
-    // 7. REALISTIC TERRAIN, MIRAGE & RETICLE RENDERER
+    // 7. REALISTIC TERRAIN, RIFLE HARDWARE, WIND FLAG & RETICLE RENDERER
     // =========================================================================
     const canvas = document.getElementById('scopeCanvas');
     const ctx = canvas.getContext('2d');
@@ -945,41 +1021,39 @@
 
       const W = canvas.width, H = canvas.height;
       const cx = W / 2, cy = H / 2;
-      const pxPerTrueMrad = state.zoom * 2.6;
+      const pxPerTrueMrad = state.zoom * 2.4;
 
       const viewOffsetX = -(state.aimPanX + state.swayX + state.recoilX) * pxPerTrueMrad;
       const viewOffsetY = (state.aimPanY + state.bagElevMrad - state.swayY + state.recoilY) * pxPerTrueMrad;
 
       // 1. REALISTIC SKY GRADIENT
       const skyGrad = ctx.createLinearGradient(0, 0, 0, cy + viewOffsetY);
-      skyGrad.addColorStop(0, '#4a78a8');
-      skyGrad.addColorStop(0.65, '#8bb3d6');
+      skyGrad.addColorStop(0, '#4573a3');
+      skyGrad.addColorStop(0.65, '#89b2d6');
       skyGrad.addColorStop(1, '#d4e2ec');
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, W, H);
 
-      // 2. DISTANT MOUNTAIN RIDGES (Atmospheric Perspective)
-      const horizonY = cy + viewOffsetY - (38 * (state.zoom / 10));
+      // 2. DISTANT MOUNTAIN RIDGES
+      const horizonY = cy + viewOffsetY - (42 * (state.zoom / 10));
       ctx.save();
-      // Far mountain layer
       ctx.fillStyle = '#6c859c';
       ctx.beginPath();
       ctx.moveTo(-100, horizonY + 30);
       for (let mx = -100; mx <= W + 100; mx += 40) {
-        const ridgeH = Math.sin((mx - viewOffsetX * 0.25) * 0.008) * 28 + Math.cos((mx - viewOffsetX * 0.25) * 0.019) * 14;
-        ctx.lineTo(mx, horizonY - 35 - ridgeH);
+        const ridgeH = Math.sin((mx - viewOffsetX * 0.25) * 0.007) * 30 + Math.cos((mx - viewOffsetX * 0.25) * 0.018) * 15;
+        ctx.lineTo(mx, horizonY - 38 - ridgeH);
       }
       ctx.lineTo(W + 100, horizonY + 30);
       ctx.closePath();
       ctx.fill();
 
-      // Closer foothills / treeline silhouette
-      ctx.fillStyle = '#4e6357';
+      ctx.fillStyle = '#4c6155';
       ctx.beginPath();
       ctx.moveTo(-100, horizonY + 40);
       for (let mx = -100; mx <= W + 100; mx += 25) {
-        const hillH = Math.sin((mx - viewOffsetX * 0.45) * 0.013 + 1.4) * 18 + Math.sin((mx - viewOffsetX * 0.45) * 0.05) * 4;
-        ctx.lineTo(mx, horizonY - 12 - hillH);
+        const hillH = Math.sin((mx - viewOffsetX * 0.45) * 0.012 + 1.4) * 18 + Math.sin((mx - viewOffsetX * 0.45) * 0.05) * 4;
+        ctx.lineTo(mx, horizonY - 14 - hillH);
       }
       ctx.lineTo(W + 100, horizonY + 40);
       ctx.closePath();
@@ -990,11 +1064,10 @@
       const fieldGrad = ctx.createLinearGradient(0, horizonY, 0, H);
       fieldGrad.addColorStop(0, '#6a7a52');
       fieldGrad.addColorStop(0.3, '#55663e');
-      fieldGrad.addColorStop(1, '#394728');
+      fieldGrad.addColorStop(1, '#364425');
       ctx.fillStyle = fieldGrad;
       ctx.fillRect(0, horizonY, W, H - horizonY);
 
-      // Subtle grass mowing lanes / distance bands
       ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
       for (let b = 0; b < 6; b++) {
         const bandY = horizonY + Math.pow(b / 6, 1.6) * (H - horizonY);
@@ -1006,10 +1079,9 @@
       ctx.translate(cx + viewOffsetX, cy + viewOffsetY);
 
       const inchesPerMrad = (state.distanceYd * 36) / 1000;
-      const bermW = (240 / inchesPerMrad) * pxPerTrueMrad;
-      const bermH = (75 / inchesPerMrad) * pxPerTrueMrad;
+      const bermW = (260 / inchesPerMrad) * pxPerTrueMrad;
+      const bermH = (78 / inchesPerMrad) * pxPerTrueMrad;
 
-      // Dirt Backstop Berm behind target
       const bermGrad = ctx.createLinearGradient(0, -bermH * 0.85, 0, bermH * 0.55);
       bermGrad.addColorStop(0, '#8c7254');
       bermGrad.addColorStop(0.5, '#735b40');
@@ -1022,13 +1094,11 @@
       ctx.closePath();
       ctx.fill();
 
-      // Berm base shadow
       ctx.fillStyle = 'rgba(20, 25, 15, 0.35)';
       ctx.fillRect(-bermW * 1.05, bermH * 0.52, bermW * 2.1, bermH * 0.12);
 
-      // Procedural scrub bushes around range floor
       TERRAIN_BUSHES.forEach(bush => {
-        const bx = bush.xNorm * bermW * 1.6;
+        const bx = bush.xNorm * bermW * 1.7;
         const by = bermH * 0.55 + bush.yNorm * (H * 0.45);
         const br = (6 + bush.yNorm * 14) * bush.size * (state.zoom / 10);
         ctx.fillStyle = bush.shade > 0.5 ? '#3b4a2b' : '#485935';
@@ -1043,19 +1113,15 @@
       const postBotY = postTopY + postH;
       const crossbarW = (26 / inchesPerMrad) * pxPerTrueMrad;
 
-      // Steel T-post & crossbar
       ctx.strokeStyle = '#2d3748';
       ctx.lineWidth = Math.max(2, (2.5 / inchesPerMrad) * pxPerTrueMrad);
       ctx.beginPath();
-      // Vertical post behind target
       ctx.moveTo(0, postTopY);
       ctx.lineTo(0, postBotY);
-      // Top T-hanger bar
       ctx.moveTo(-crossbarW * 0.5, postTopY);
       ctx.lineTo(crossbarW * 0.5, postTopY);
       ctx.stroke();
 
-      // Hanging chains
       ctx.strokeStyle = '#1a202c';
       ctx.lineWidth = 1.2;
       ctx.beginPath();
@@ -1065,7 +1131,7 @@
       ctx.lineTo(crossbarW * 0.25, -4);
       ctx.stroke();
 
-      // 6. STEEL TARGET PLATE (With metallic shading)
+      // 6. STEEL TARGET PLATE
       ctx.fillStyle = '#f1f5f9';
       ctx.strokeStyle = '#1e293b';
       ctx.lineWidth = 1.8;
@@ -1074,22 +1140,21 @@
         const scale = state.targetType === 'ipsc_23' ? (2 / 3) : 1.0;
         const wPx = ((18 * scale) / inchesPerMrad) * pxPerTrueMrad;
         const hPx = ((30 * scale) / inchesPerMrad) * pxPerTrueMrad;
-        // Torso
         ctx.fillRect(-wPx / 2, -hPx * 0.35, wPx, hPx * 0.85);
         ctx.strokeRect(-wPx / 2, -hPx * 0.35, wPx, hPx * 0.85);
-        // Headbox
         ctx.fillRect(-wPx * 0.25, -hPx * 0.5, wPx * 0.5, hPx * 0.15);
         ctx.strokeRect(-wPx * 0.25, -hPx * 0.5, wPx * 0.5, hPx * 0.15);
       } else {
-        const diaIn = 1.5 * 1.047 * (state.distanceYd / 100);
+        const moaSize = state.targetType === 'gong_10moa' ? 1.0 : 1.5;
+        const diaIn = moaSize * 1.047 * (state.distanceYd / 100);
         const rPx = ((diaIn / 2) / inchesPerMrad) * pxPerTrueMrad;
         ctx.beginPath();
-        ctx.arc(0, 0, Math.max(rPx, 3), 0, Math.PI * 2);
+        ctx.arc(0, 0, Math.max(rPx, 2.5), 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
       }
 
-      // 7. DOWNRANGE WIND FLAG (Tier 2+ Wind Intel)
+      // 7. DOWNRANGE WIND FLAG (FIXED DIRECTION: 3 o'clock wind blows TOWARD 9 o'clock / Left)
       if (state.eq.wind === 'wind_2' || state.eq.wind === 'wind_3') {
         const flagX = ((46 / inchesPerMrad) * pxPerTrueMrad);
         const flagPoleH = (52 / inchesPerMrad) * pxPerTrueMrad;
@@ -1102,9 +1167,10 @@
         ctx.lineTo(flagX, baseGroundY - flagPoleH);
         ctx.stroke();
 
-        const crossFactor = Math.sin((state.curWindClock * 30) * Math.PI / 180);
+        // Negative sign flips flag direction so wind FROM 3 o'clock (+sin) blows TO 9 o'clock (left / negative X)
+        const crossFactor = -Math.sin((state.curWindClock * 30) * Math.PI / 180);
         const flutter = Math.sin(tSec * (6 + state.curWindMph * 0.8)) * 2.5;
-        const flagLen = Math.min(state.curWindMph * 2.4, 32) * crossFactor;
+        const flagLen = Math.min(state.curWindMph * 2.4, 34) * crossFactor;
         const droop = Math.max(2, 16 - state.curWindMph * 1.1);
 
         ctx.fillStyle = '#e53e3e';
@@ -1116,18 +1182,16 @@
         ctx.fill();
       }
 
-      // 8. BULLET IMPACTS (Lead splatter on steel / dirt craters on berm)
+      // 8. BULLET IMPACTS
       state.impacts.forEach(imp => {
         const ix = imp.xMrad * pxPerTrueMrad;
         const iy = -imp.yMrad * pxPerTrueMrad;
         if (imp.isHit) {
-          // Dark gray lead splash mark on white steel
           ctx.fillStyle = 'rgba(45, 55, 72, 0.85)';
           ctx.beginPath();
           ctx.arc(ix, iy, Math.max(2.2, (0.8 / inchesPerMrad) * pxPerTrueMrad), 0, Math.PI * 2);
           ctx.fill();
         } else {
-          // Dark dirt crater in berm
           ctx.fillStyle = 'rgba(42, 31, 20, 0.85)';
           ctx.beginPath();
           ctx.arc(ix, iy, Math.max(3, (1.4 / inchesPerMrad) * pxPerTrueMrad), 0, Math.PI * 2);
@@ -1135,12 +1199,12 @@
         }
       });
 
-      // 9. DRIFTING DUST PLUMES ON MISSES
-      const windDriftDir = Math.sin((state.curWindClock * 30) * Math.PI / 180);
+      // 9. DRIFTING DUST PLUMES ON MISSES (Also drifts WITH wind toward 9 o'clock on 3 o'clock wind)
+      const windDriftDir = -Math.sin((state.curWindClock * 30) * Math.PI / 180);
       for (let i = state.dustPlumes.length - 1; i >= 0; i--) {
         const p = state.dustPlumes[i];
         p.xMrad += windDriftDir * (state.curWindMph * 0.00045);
-        p.yMrad += 0.0015; // Dust rises slightly
+        p.yMrad += 0.0015;
         p.radius += 0.006;
         p.alpha -= 0.005;
 
@@ -1159,12 +1223,12 @@
 
       ctx.restore();
 
-      // 10. SUBTLE HEAT MIRAGE WAVES (Visual wind cue for naked eye)
-      const mirageCross = Math.sin((state.curWindClock * 30) * Math.PI / 180);
+      // 10. HEAT MIRAGE WAVES (Drifts with wind)
+      const mirageCross = -Math.sin((state.curWindClock * 30) * Math.PI / 180);
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
       ctx.lineWidth = 1.5;
       for (let m = 0; m < 5; m++) {
-        const my = horizonY + 12 + m * 22;
+        const my = horizonY + 12 + m * 24;
         const shift = (tSec * state.curWindMph * 4 * mirageCross + m * 60) % W;
         ctx.beginPath();
         for (let wx = -50; wx < W + 50; wx += 20) {
@@ -1176,19 +1240,19 @@
       }
 
       // 11. RETICLE RENDERING (SFP vs FFP Scaling)
-      const reticlePxPerMrad = o.ffp ? pxPerTrueMrad : (10 * 2.6);
+      const reticlePxPerMrad = o.ffp ? pxPerTrueMrad : (10 * 2.4);
 
       ctx.strokeStyle = '#090b0e';
       ctx.fillStyle = '#090b0e';
       ctx.lineWidth = 1.5;
 
       ctx.beginPath();
-      ctx.moveTo(cx, 25); ctx.lineTo(cx, H - 25);
-      ctx.moveTo(25, cy); ctx.lineTo(W - 25, cy);
+      ctx.moveTo(cx, 22); ctx.lineTo(cx, H - 22);
+      ctx.moveTo(22, cy); ctx.lineTo(W - 22, cy);
       ctx.stroke();
 
       if (o.reticle === 'mildot') {
-        for (let m = -8; m <= 8; m++) {
+        for (let m = -10; m <= 10; m++) {
           if (m === 0) continue;
           let pos = m * reticlePxPerMrad;
           ctx.beginPath();
@@ -1197,7 +1261,7 @@
           ctx.fill();
         }
       } else if (o.reticle === 'simple_tree') {
-        for (let m = -10; m <= 10; m += 0.5) {
+        for (let m = -12; m <= 12; m += 0.5) {
           if (m === 0) continue;
           let pos = m * reticlePxPerMrad;
           let tick = Number.isInteger(m) ? 5 : 2.5;
@@ -1207,7 +1271,7 @@
           ctx.stroke();
 
           if (m >= 1 && Number.isInteger(m)) {
-            let maxWind = Math.min(m, 5);
+            let maxWind = Math.min(m, 6);
             for (let w = -maxWind; w <= maxWind; w++) {
               if (w === 0) continue;
               ctx.beginPath();
@@ -1216,8 +1280,9 @@
             }
           }
         }
-      } else if (o.reticle === 'full_tree') {
-        for (let m = -12; m <= 12; m += 0.2) {
+      } else if (o.reticle === 'full_tree' || o.reticle === 'elr_tree') {
+        const maxM = o.reticle === 'elr_tree' ? 16 : 12;
+        for (let m = -maxM; m <= maxM; m += 0.2) {
           let mr = parseFloat(m.toFixed(1));
           if (mr === 0) continue;
           let pos = mr * reticlePxPerMrad;
@@ -1228,7 +1293,7 @@
           ctx.stroke();
 
           if (mr >= 1 && Number.isInteger(mr)) {
-            let maxWind = Math.min(mr + 1, 7);
+            let maxWind = Math.min(mr + 1, 8);
             for (let w = -maxWind; w <= maxWind; w += 0.5) {
               if (w === 0) continue;
               ctx.beginPath();
@@ -1239,20 +1304,97 @@
         }
       }
 
-      // 12. OUTER SCOPE TUBE BEZEL WITH VIGNETTE SHADOW
-      const vigGrad = ctx.createRadialGradient(cx, cy, cx - 55, cx, cy, cx - 18);
+      // 12. OUTER SCOPE TUBE BEZEL & RIFLE HARDWARE (Scope Rings, Barrel & Chassis Forend)
+      const scopeRadius = Math.min(cx, cy) - 20;
+
+      // Vignette inside scope glass
+      const vigGrad = ctx.createRadialGradient(cx, cy, scopeRadius - 42, cx, cy, scopeRadius);
       vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
-      vigGrad.addColorStop(1, 'rgba(0,0,0,0.65)');
+      vigGrad.addColorStop(1, 'rgba(0,0,0,0.68)');
       ctx.fillStyle = vigGrad;
       ctx.beginPath();
-      ctx.arc(cx, cy, cx - 18, 0, Math.PI * 2);
+      ctx.arc(cx, cy, scopeRadius, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.strokeStyle = '#090b0e';
-      ctx.lineWidth = 36;
+      // Mask everything outside the circular scope ocular lens
+      ctx.save();
+      ctx.fillStyle = '#090b0e';
       ctx.beginPath();
-      ctx.arc(cx, cy, cx - 18, 0, Math.PI * 2);
+      ctx.rect(0, 0, W, H);
+      ctx.arc(cx, cy, scopeRadius, 0, Math.PI * 2, true);
+      ctx.fill();
+      ctx.restore();
+
+      // Scope metallic ocular ring rim
+      ctx.strokeStyle = '#232931';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.arc(cx, cy, scopeRadius + 2, 0, Math.PI * 2);
       ctx.stroke();
+
+      // --- VISIBLE RIFLE HARDWARE BELOW SCOPE TUBE (Reacts to Recoil) ---
+      const rifleShiftX = -state.recoilX * 6;
+      const rifleShiftY = -state.recoilY * 5;
+      const baseBottomY = cy + scopeRadius;
+
+      ctx.save();
+      ctx.translate(cx + rifleShiftX, baseBottomY + rifleShiftY);
+
+      // 1. Heavy Barrel & Muzzle Brake extending forward (perspective taper)
+      const bblGrad = ctx.createLinearGradient(-22, -45, 22, -45);
+      bblGrad.addColorStop(0, '#1a202c');
+      bblGrad.addColorStop(0.5, '#4a5568');
+      bblGrad.addColorStop(1, '#1a202c');
+      ctx.fillStyle = bblGrad;
+      ctx.beginPath();
+      ctx.moveTo(-16, 15);
+      ctx.lineTo(-9, -46);
+      ctx.lineTo(9, -46);
+      ctx.lineTo(16, 15);
+      ctx.closePath();
+      ctx.fill();
+
+      // Muzzle Brake Ports
+      ctx.fillStyle = '#0f1318';
+      ctx.fillRect(-10, -45, 20, 4);
+      ctx.fillRect(-10, -38, 20, 4);
+
+      // 2. Chassis Forend & Arca Rail
+      const chsColor = state.eq.chassis === 'chs_3' ? '#3a4238' : (state.eq.chassis === 'chs_2' ? '#2d3748' : '#26292e');
+      ctx.fillStyle = chsColor;
+      ctx.strokeStyle = '#14181f';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-36, 25);
+      ctx.lineTo(-22, -24);
+      ctx.lineTo(22, -24);
+      ctx.lineTo(36, 25);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // M-LOK / Vent slots on chassis forend
+      ctx.fillStyle = '#111418';
+      ctx.fillRect(-20, -14, 6, 14);
+      ctx.fillRect(14, -14, 6, 14);
+
+      // 3. Lower Scope Ring & Picatinny Base Saddle
+      ctx.fillStyle = '#1e242c';
+      ctx.strokeStyle = '#38414e';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(-34, -8, 68, 24, 4);
+      ctx.fill();
+      ctx.stroke();
+
+      // Scope Ring Clamping Bolts (Left & Right lugs)
+      ctx.fillStyle = '#718096';
+      ctx.beginPath();
+      ctx.arc(-27, 3, 3.2, 0, Math.PI * 2);
+      ctx.arc(27, 3, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
 
       requestAnimationFrame(drawFrame);
     }
@@ -1275,7 +1417,8 @@
 
     function stepZoom(dir) {
       const { o } = getEquipped();
-      state.zoom = Math.min(o.maxZoom, Math.max(o.minZoom, state.zoom + dir * 2));
+      const step = o.maxZoom >= 25 ? 3 : 2;
+      state.zoom = Math.min(o.maxZoom, Math.max(o.minZoom, state.zoom + dir * step));
       document.getElementById('hud-zoom').innerText = `${state.zoom.toFixed(1)}x`;
       document.getElementById('disp-zoom-btn').innerText = `${state.zoom}x`;
     }
@@ -1338,8 +1481,8 @@
       lastDragX = e.clientX;
       lastDragY = e.clientY;
       const sens = 0.015 / (state.zoom / 10);
-      state.aimPanX = Math.max(-6, Math.min(6, state.aimPanX - dx * sens));
-      state.aimPanY = Math.max(-6, Math.min(6, state.aimPanY - dy * sens));
+      state.aimPanX = Math.max(-8, Math.min(8, state.aimPanX - dx * sens));
+      state.aimPanY = Math.max(-8, Math.min(8, state.aimPanY - dy * sens));
     });
     window.addEventListener('pointerup', () => dragging = false);
 
@@ -1376,7 +1519,7 @@
         { title: 'Cases & Propellant', key: 'ammo', items: BRASS_POWDER, fmt: x => x.desc },
         { title: 'Barrels & Actions', key: 'barrel', items: BARRELS, fmt: x => x.desc },
         { title: 'Rifle Chassis', key: 'chassis', items: CHASSIS, fmt: x => x.desc },
-        { title: 'Precision Projectiles (19-Bullet Library)', key: 'bullet', items: BULLETS, fmt: x => `G7 BC: ${x.bc} | Base MV: ${x.mv} fps | Len: ${x.len}" | $${x.roundCost.toFixed(2)}/rd` }
+        { title: 'Precision Projectiles (25-Bullet Library)', key: 'bullet', items: BULLETS, fmt: x => `G7 BC: ${x.bc} | Base MV: ${x.mv} fps | Len: ${x.len}" | $${x.roundCost.toFixed(2)}/rd` }
       ];
 
       sections.forEach(sec => {
